@@ -2,25 +2,26 @@ from pathlib import Path
 from documents import DocumentCorpus, DirectoryCorpus
 from indexing import Index, TermDocumentIndex , InvertedIndex
 from text import BasicTokenProcessor, EnglishTokenStream
+from text.advancedtokenprocessor import AdvancedTokenProcessor
 
 """This basic program builds an InvertedIndex over the .JSON files in 
 the folder "all-nps-sites-extracted" of same directory as this file."""
 
 
 def index_corpus(corpus: DocumentCorpus) -> Index:
-    token_processor = BasicTokenProcessor()
+    token_processor = AdvancedTokenProcessor()
     ind = InvertedIndex()
 
     for d in corpus:
         stream = EnglishTokenStream(d.getContent())
-        for s in stream:
-            ind.add_term(token_processor.process_token(s), d.id)
+        for position, s in enumerate(stream):
+            ind.add_term(token_processor.process_token(s), d.id, position+1)
     return ind
 
 
 if __name__ == "__main__":
     token_processor = BasicTokenProcessor()
-    corpus_path = "./all-nps-sites-extracted"
+    corpus_path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/all-nps-sites-extracted"
     d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
 
     # Build the index over this directory.
