@@ -20,7 +20,7 @@ def index_corpus(corpus: DocumentCorpus) -> Index:
 
 if __name__ == "__main__":
     token_processor = BasicTokenProcessor()
-    corpus_path = "./all-nps-sites-extracted"
+    corpus_path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/all-nps-sites-extracted"
     d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
 
     # Build the index over this directory.

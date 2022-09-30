@@ -16,7 +16,7 @@ class AdvancedTokenProcessor(TokenProcessor):
         split tokens.
     5. Stems the token using an implementation of the Porter2 stemmer."""
 
-    
+
     remove_non_alphnum = re.compile(r"^[\W_]+|[\W_]+$")
     double_quotes = '"'
     single_quote = "'"
@@ -37,5 +37,3 @@ class AdvancedTokenProcessor(TokenProcessor):
         else:
             processed_list.append(stemmer.stem(processed_token))
             return processed_list
-
-
