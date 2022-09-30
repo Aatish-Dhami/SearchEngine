@@ -13,8 +13,8 @@ def index_corpus(corpus: DocumentCorpus) -> Index:
 
     for d in corpus:
         stream = EnglishTokenStream(d.getContent())
-        for s in stream:
-            ind.add_term(token_processor.process_token(s), d.id)
+        for position, s in enumerate(stream):
+            ind.add_term(token_processor.process_token(s), d.id, position+1)
     return ind
 
 
