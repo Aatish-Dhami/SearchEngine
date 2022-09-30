@@ -2,13 +2,14 @@ from pathlib import Path
 from documents import DocumentCorpus, DirectoryCorpus
 from indexing import Index, TermDocumentIndex , InvertedIndex
 from text import BasicTokenProcessor, EnglishTokenStream
+from text.advancedtokenprocessor import AdvancedTokenProcessor
 
 """This basic program builds an InvertedIndex over the .JSON files in 
 the folder "all-nps-sites-extracted" of same directory as this file."""
 
 
 def index_corpus(corpus: DocumentCorpus) -> Index:
-    token_processor = BasicTokenProcessor()
+    token_processor = AdvancedTokenProcessor()
     ind = InvertedIndex()
 
     for d in corpus:
