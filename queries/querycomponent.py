@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from indexing import Posting
 
+
 class QueryComponent(ABC):
     """
     A QueryComponent is one piece of a larger query, whether that piece is a literal string or represents a merging of
