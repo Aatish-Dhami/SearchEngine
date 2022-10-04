@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import Iterable
 from .postings import Posting
 from .index import Index
 
