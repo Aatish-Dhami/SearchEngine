@@ -1,6 +1,4 @@
-from typing import List
 from porter2stemmer import Porter2Stemmer
-
 from .tokenprocessor import TokenProcessor
 import re
 
@@ -21,7 +19,7 @@ class AdvancedTokenProcessor(TokenProcessor):
     double_quotes = '"'
     single_quote = "'"
 
-    def process_token(self, token: str) -> List[str]:
+    def process_token(self, token: str) -> list[str]:
         stemmer = Porter2Stemmer()
         processed_list = []
 
