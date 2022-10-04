@@ -25,6 +25,10 @@ class JsonFileDocument(Document):
         with open(self.path, 'r') as file:
             return StringIO(json.load(file).get('body'))
 
+    def getAuthor(self) -> Iterable[str]:
+        with open(self.path, 'r') as file:
+            return StringIO(json.load(file).get('author'))
+
     @staticmethod
     def load_from(abs_path: Path, doc_id: int) -> 'JsonFileDocument':
         """A factory method to create a JsonFileDocument around the given file path."""
