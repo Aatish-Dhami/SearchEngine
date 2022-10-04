@@ -68,13 +68,13 @@ class BooleanQueryParser:
             # This is a PhraseLiteral
 
             next_double_quotes = subquery.find('"', start_index + 1)
-            length_out = next_double_quotes - start_index
+            length_out = next_double_quotes - start_index + 1
 
             # TODO - done
             # PhraseLiteral takes List[str] instead of str
             return BooleanQueryParser._Literal(
                 BooleanQueryParser._StringBounds(start_index, length_out),
-                PhraseLiteral(subquery[start_index:start_index + length_out].split())
+                PhraseLiteral(subquery[start_index+1:start_index + length_out].split())
             )
         else:
             # This is a term literal containing a single term.

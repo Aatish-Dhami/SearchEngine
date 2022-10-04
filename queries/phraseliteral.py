@@ -1,4 +1,5 @@
 from indexing.postings import Posting
+from text.advancedtokenprocessor import AdvancedTokenProcessor
 from .querycomponent import QueryComponent
 
 
@@ -15,16 +16,18 @@ def _positional_intersect(p1: list[Posting], p2: list[Posting], k: int) -> list[
             l2 = p2[j].position
             l3 = []
             while l < len(l1) and m < len(l2):
-                if l + k == m:
+                if l1[l] + k == l2[m]:
                     # Add to l3
                     l3.append(l1[l])
+                    l += 1
+                    m += 1
                 else:
-                    if l + k < m:
+                    if l1[l] + k < l2[m]:
                         l += 1
                     else:
                         m += 1
 
-            if len(l3) is not 0:
+            if len(l3) != 0:
                 # Make a posting and add to ans
                 newPosting = Posting(p1[i].doc_id)
                 for position in l3:
@@ -56,17 +59,19 @@ class PhraseLiteral(QueryComponent):
         # return None
         # TODO: program this method. Retrieve the postings for the individual terms in the phrase,
         # and positional merge them together.
+        token_processor = AdvancedTokenProcessor()
 
-        if len(self.terms) is 0:
+        if len(self.terms) == 0:
             return []
-        elif len(self.terms) is 1:
-            return index.get_postings(self.terms[0])
+        elif len(self.terms) == 1:
+            return index.getPostings(self.terms[0])
 
         postingListForIndiTerm = []
 
         # Create a list of all Individual term posting
+        # TODO: What to do if the term is of hyphen - Done
         for term in self.terms:
-            postingListForIndiTerm.append(index.get_postings(term))
+            postingListForIndiTerm.append(index.getPostings(token_processor.process_token(term)[-1]))
 
         position = 1
         answer = []
@@ -77,7 +82,7 @@ class PhraseLiteral(QueryComponent):
                 answer = _positional_intersect(postingListForIndiTerm[0], postingListForIndiTerm[position], position)
                 position += 1
             else:
-                # Perform positional intersect for terms having position greater than 2
+                # Perform positional intersect for terms having position index greater than 1
                 answer = _positional_intersect(answer, postingListForIndiTerm[position], position)
                 position += 1
 

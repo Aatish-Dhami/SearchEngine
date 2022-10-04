@@ -1,4 +1,5 @@
 from indexing.postings import Posting
+from text.advancedtokenprocessor import AdvancedTokenProcessor
 from .querycomponent import QueryComponent
 
 class TermLiteral(QueryComponent):
@@ -10,7 +11,9 @@ class TermLiteral(QueryComponent):
         self.term = term
 
     def get_postings(self, index) -> list[Posting]:
-        return index.get_postings(self.term)
+        # TODO: What to do if the term is hyphen - Done
+        token_processor = AdvancedTokenProcessor()
+        return index.getPostings(token_processor.process_token(self.term)[-1])
 
     def __str__(self) -> str:
         return self.term

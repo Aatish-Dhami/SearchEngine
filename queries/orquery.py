@@ -35,10 +35,13 @@ class OrQuery(QueryComponent):
 
             while r < len(result):
                 temp.append(Posting(result[r].doc_id))
+                r += 1
             while i < len(positionPostings):
                 temp.append(Posting(positionPostings[i].doc_id))
+                i += 1
 
             result = temp
+            position += 1
 
         return result
 

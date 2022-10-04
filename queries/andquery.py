@@ -31,6 +31,7 @@ class AndQuery(QueryComponent):
                     else:
                         i += 1
             result = temp
+            position += 1
 
         return result
 
