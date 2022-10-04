@@ -53,7 +53,7 @@ if __name__ == "__main__":
                 print(Porter2Stemmer().stem(query[5:]))
                 continue
             elif query[1:6] == "index":
-                # TODO - Restart program
+                # TODO - Restart program - Done
                 corpus_path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/" + query[7:]
 
                 if os.listdir(corpus_path)[0].endswith('.json'):
