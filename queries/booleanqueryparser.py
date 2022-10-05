@@ -63,6 +63,22 @@ class BooleanQueryParser:
         while subquery[start_index] == ' ':
             start_index += 1
 
+        # Check if the subquery is NEAR Query?
+        # TODO - done
+        if subquery[start_index] == '[':
+            # This is a NEAR Query
+            closing_square_bracket = subquery.find(']', start_index+1)
+            length_out = closing_square_bracket - start_index + 1
+
+            # Getting term1, term2, and k from NearQuery
+            terms = subquery[start_index+1:start_index + length_out].split()
+
+            from queries import NearLiteral
+            return BooleanQueryParser._Literal(
+                BooleanQueryParser._StringBounds(start_index, length_out),
+                NearLiteral(terms[0], terms[2], int(terms[1][-1]))
+            )
+
         # Check if it is a PhraseLiteral or TermLiteral
         if subquery[start_index] == '"':
             # This is a PhraseLiteral
@@ -70,7 +86,6 @@ class BooleanQueryParser:
             next_double_quotes = subquery.find('"', start_index + 1)
             length_out = next_double_quotes - start_index + 1
 
-            # TODO - done
             # PhraseLiteral takes List[str] instead of str
             return BooleanQueryParser._Literal(
                 BooleanQueryParser._StringBounds(start_index, length_out),
@@ -89,12 +104,6 @@ class BooleanQueryParser:
                 BooleanQueryParser._StringBounds(start_index, length_out),
                 TermLiteral(subquery[start_index:start_index + length_out])
             )
-
-        # TODO: - done
-
-    # Instead of assuming that we only have single-term literals, modify this method so it will create a PhraseLiteral
-    # object if the first non-space character you find is a double-quote ("). In this case, the literal is not ended
-    # by the next space character, but by the next double-quote character.
 
     def parse_query(self, query: str) -> QueryComponent:
         """

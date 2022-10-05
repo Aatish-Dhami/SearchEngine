@@ -18,10 +18,10 @@ class Document(ABC):
         """The title of the document, for displaying to the user."""
         pass
 
-    @abstractmethod
-    def getAuthor(self) -> str:
-        """The Author of the document, for displaying to the user."""
-        pass
+    # @abstractmethod
+    # def getAuthor(self) -> str:
+    #     """The Author of the document, for displaying to the user."""
+    #     pass
 
     def __str__(self) -> str:
         return f"{self.getTitle} (ID {self.id})"
