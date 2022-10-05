@@ -17,7 +17,9 @@ from pathlib import Path
 the folder "all-nps-sites-extracted" of same directory as this file."""
 
 
-def index_corpus(corpus: DocumentCorpus) -> tuple[InvertedIndex, SoundexIndex]:
+def index_corpus(corpus: DocumentCorpus, type: int) -> tuple[InvertedIndex, SoundexIndex]:
+    # Type 0 - .txt
+    # Type 1 - .json
     token_processor = AdvancedTokenProcessor()
     soundex_processor = SoundexTokenProcessor()
     ind = InvertedIndex()
@@ -25,12 +27,16 @@ def index_corpus(corpus: DocumentCorpus) -> tuple[InvertedIndex, SoundexIndex]:
 
     for d in corpus:
         stream = EnglishTokenStream(d.getContent())
-        auth = EnglishTokenStream(d.getAuthor())
-        for position, s in enumerate(stream):
-            ind.add_term(token_processor.process_token(s), d.id, position + 1)
+        if type == 0:
+            for position, s in enumerate(stream):
+                ind.add_term(token_processor.process_token(s), d.id, position + 1)
+        else:
+            auth = EnglishTokenStream(d.getAuthor())
+            for position, s in enumerate(stream):
+                ind.add_term(token_processor.process_token(s), d.id, position + 1)
 
-        for ss in auth:
-            soundex.add_term(soundex_processor.process_token(ss), d.id)
+            for ss in auth:
+                soundex.add_term(soundex_processor.process_token(ss), d.id)
 
     return ind, soundex
 
@@ -39,16 +45,19 @@ if __name__ == "__main__":
     booleanQueryParser = BooleanQueryParser()
 
     corpus_path = input("Enter the path for corpus: ")
-
+    type = -1
     if os.listdir(corpus_path)[0].endswith('.json'):
         d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
+        type = 1
     else:
         d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
+        type = 0
 
     print("Indexing started....")
     start = time.time()
     # Build the index over this directory.
-    inverted_index, soundex_index = index_corpus(d)
+
+    inverted_index, soundex_index = index_corpus(d, type)
     elapsed = time.time() - start
     print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
                                                                time.gmtime(elapsed)))
@@ -85,7 +94,7 @@ if __name__ == "__main__":
                 print("Indexing started....")
                 start = time.time()
                 # Build the index over this directory.
-                inverted_index, soundex_index = index_corpus(d)
+                inverted_index, soundex_index = index_corpus(d, type)
                 elapsed = time.time() - start
                 print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
                                                                            time.gmtime(elapsed)))
