@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Search Engine</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="https://code.jquery.com/jquery-migrate-1.4.1.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 </head>
 <script>
 function getPath(){
@@ -26,6 +30,7 @@ function getPath(){
                     $("#time_div").append(html);
                     $(".query_div").show();
                     $("#start_indexing").hide();
+                    $("#path_div").hide();
                 });
     }
 };
@@ -93,26 +98,26 @@ function search() {
         $("#open_doc").hide();
     });
   </script>
-<body id="body_id">
+<body class="container" id="body_id">
 <p>
     Search Engine Milestone 1<br><br>
-<div id="path_div">
-    Corpus Path : <input type="text" id="text1" name="text1"><br><br>
-    <button id="btn_path" onclick="getPath()">Submit</button>
+<div id="path_div" class="form-group">
+    Corpus Path : <input type="text" class="form-control" id="text1" name="text1"><br><br>
+    <button class="btn btn-primary" id="btn_path" onclick="getPath()">Submit</button>
 </div>
 <div id="start_indexing">Indexing....</div>
 <div id="time_div"></div>
-<div class="query_div">
-    Enter Query : <input type="text" id="text2" name="text2"><br><br>
-    <button id="btn_query" onclick="search()">Submit</button>
+<div class="query_div form-group">
+    Enter Query : <input type="text" class="form-control" id="text2" name="text2"><br><br>
+    <button class="btn btn-dark" id="btn_query" onclick="search()">Submit</button>
 </div>
 <div id="path_error">error for path. path is not valid</div>
 </p>
 <div class="show-data" >
 </div>
-<div id="open_doc">
-    Enter Document ID which you want to open : <input type="text" id="doc_id" name="doc_id"><br><br>
-    <button id="btn_doc_id" onclick="get_doc()">Submit</button>
+<div id="open_doc" class="form-group">
+    Enter Document ID which you want to open : <input class="form-control" type="text" id="doc_id" name="doc_id"><br><br>
+    <button class="btn btn-info" id="btn_doc_id" onclick="get_doc()">Submit</button>
     <div id="doc_output"></div>
 </div>
 </body>

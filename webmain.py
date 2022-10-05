@@ -1,17 +1,18 @@
+from typing import Tuple
 from documents import DocumentCorpus, DirectoryCorpus
-import os
-import time
-
-from flask import Flask, render_template, request
-from porter2stemmer import Porter2Stemmer
-
-from documents import DocumentCorpus, DirectoryCorpus
-from indexing import InvertedIndex
+from indexing import Index, InvertedIndex, SoundexIndex
 from indexing.soundexindex import SoundexIndex
 from queries import BooleanQueryParser
 from text import EnglishTokenStream
 from text.advancedtokenprocessor import AdvancedTokenProcessor
 from text.soundextokenprocessor import SoundexTokenProcessor
+import time
+from porter2stemmer import Porter2Stemmer
+import os
+from flask import Flask, render_template, send_file, make_response, url_for, Response, redirect, request, jsonify
+
+import json
+from pathlib import Path
 
 """This basic program builds an InvertedIndex over the .JSON files in 
 the folder "all-nps-sites-extracted" of same directory as this file."""
@@ -56,11 +57,13 @@ def path_post():
     time = getTimeForIndexing(path)
     return time
 
+
 @app.route('/for_doc', methods=['GET', 'POST'])
 def get_content():
     docID = request.form['doc_id']
     response = getDocData(docID)
     return response
+
 
 @app.route('/for_query', methods=['GET', 'POST'])
 def query_search():
@@ -176,33 +179,38 @@ def getListOfDocuments(query, directory):
     print(f"The query '{query}' is found in documents: ")
     docResult = []
     pList = []
+    doc_ids = []
+
     for posting in postings:
         pList.append(getTimeForIndexing.d.get_document(posting.doc_id).getTitle)
-
+        doc_ids.append(posting.doc_id)
     if len(pList) == 0:
         print("No documents found")
         return ["No Documents Found"]
     else:
-        for sr, ele in enumerate(sorted(pList)):
-            print(f"{sr + 1}. {ele}")
-            temp_with_serial = str(sr + 1) + "." + ele
+        for key, ele in enumerate(pList):
+            title = ele
+            d_id = str(doc_ids[key])
+
+            temp_with_serial = "Document ID: " + d_id + " & Title : " + title
             docResult.append(temp_with_serial)
         print(f"Length of Documents: {len(pList)}")
         return docResult
+
 
 def getDocData(docId):
     # TODO: print that document
     cont = EnglishTokenStream(getTimeForIndexing.d.get_document(int(docId)).getContent())
     strCont = []
     count = 0
+    str = ""
     for ss in cont:
-        if count == 20:
-            count = 0
-            print()
-        print(ss, end=" ")
-        strCont.append(ss)
-        count += 1
+        str = str +" " +ss
+
+    strCont.append(str)
     return strCont
+
+
 if __name__ == "__main__":
     app.run(debug=True)
     # booleanQueryParser = BooleanQueryParser()
