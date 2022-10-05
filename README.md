@@ -32,3 +32,8 @@ URL : http://127.0.0.1:5000
     4.  :vocab - print the first 1000 terms in the vocabulary of the corpus, sorted alphabetically, one term per line. Then print the count of the total number of vocabulary terms.
 - you can view all conetnt of document based on docuent ID. 
 
+
+Webapp Sceenshot:
+
+<img width="1728" alt="Search Engine" src="https://user-images.githubusercontent.com/47736398/194021576-8a0f5f3e-7024-4612-b651-f8e9d122282f.png">
+
