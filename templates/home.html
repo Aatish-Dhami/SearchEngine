@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Engine</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-1.4.1.min.js"></script>
+</head>
+<script>
+function getPath(){
+
+    $("#start_indexing").show();
+    var path= $('#text1').val();
+    if(path[0]==":"){
+        $("#start_indexing").hide();
+        $("#path_error").show();
+    }
+    else{
+        $.ajax({
+                  url: "/for_path",
+                  type: "POST",
+                  data: {path:path}
+              }).done(function(response) {
+                    var html = "Total Time for Indexing : "+response;
+                    $("#time_div").append(html);
+                    $(".query_div").show();
+                    $("#start_indexing").hide();
+                });
+    }
+};
+
+function search() {
+    $('.show-data').empty();
+    var query= $('#text2').val();
+    var directory = "";
+    if(query[0] == ":" && query.indexOf("index") == 1){
+        $("#query_div").hide();
+        $("#path_div").hide();
+        directory = query.substring(7);
+        $("#start_indexing").hide();
+
+    }
+    $.ajax({
+              url: "/for_query",
+              type: "POST",
+              data: {query:query,
+                     directory:directory}
+          }).done(function(response) {
+            var html= "<br><br><br><p> <b> RESULT : </b></p>";
+<!--            response =JSON.parse(response);-->
+                console.log(response);
+                if(response[0]=="q"){
+                    $("#body_id").hide();
+                    $("#for_quit").show();
+                }
+                else{
+
+
+                    $("#query_div").hide();
+                     $.each(response,function(key,val){
+                     console.log(val);
+                        html+="<li>"+val+"</li>"+"<br>"
+                    });
+                    html +="<br>";
+                    html +="<p>Total Documents are: "+response.length+" </p><br>";
+                    $(".show-data").append(html);
+                }
+            });
+};
+
+    $(document).ready(function(){
+        $(".query_div").hide();
+        $("#start_indexing").hide();
+        $("#for_quit").hide();
+        $("#path_error").hide();
+    });
+  </script>
+<body id="body_id">
+<div>
+    Search Engine Milestone 1<br><br>
+    <div id="path_div">
+        Corpus Path : <input type="text" id="text1" name="text1"><br><br>
+        <button id="btn_path" onclick="getPath()">Submit</button>
+    </div>
+    <div id="start_indexing">Indexing....</div>
+    <div id="time_div"></div>
+    <div class="query_div">
+        Enter Query : <input type="text" id="text2" name="text2"><br><br>
+        <button id="btn_query" onclick="search()">Submit</button>
+    </div>
+    <div id="path_error">error for path. path is not valid</div>
+</div>
+<div class="show-data" >
+</div>
+</body>
+<div id="for_quit">You closed the web app</div>
+</html>
+
