@@ -9,10 +9,9 @@ class OrQuery(QueryComponent):
         self.components = components
 
     def get_postings(self, index: Index) -> list[Posting]:
-        result = []
         # TODO: program the merge for an OrQuery, by gathering the postings of the composed QueryComponents and
         # merging the resulting postings.
-
+        result = []
         position = 0
         while position < len(self.components):
             r = 0

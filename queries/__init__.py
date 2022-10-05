@@ -4,3 +4,4 @@ from queries.orquery import OrQuery
 from queries.andquery import AndQuery
 from queries.phraseliteral import PhraseLiteral
 from queries.booleanqueryparser import BooleanQueryParser
+from queries.nearliteral import NearLiteral

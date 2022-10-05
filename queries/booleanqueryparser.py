@@ -64,12 +64,20 @@ class BooleanQueryParser:
             start_index += 1
 
         # Check if the subquery is NEAR Query?
-        # TODO
+        # TODO - done
         if subquery[start_index] == '[':
             # This is a NEAR Query
             closing_square_bracket = subquery.find(']', start_index+1)
             length_out = closing_square_bracket - start_index + 1
 
+            # Getting term1, term2, and k from NearQuery
+            terms = subquery[start_index+1:start_index + length_out].split()
+
+            from queries import NearLiteral
+            return BooleanQueryParser._Literal(
+                BooleanQueryParser._StringBounds(start_index, length_out),
+                NearLiteral(terms[0], terms[2], int(terms[1][-1]))
+            )
 
         # Check if it is a PhraseLiteral or TermLiteral
         if subquery[start_index] == '"':
