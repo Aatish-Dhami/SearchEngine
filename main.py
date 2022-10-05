@@ -88,8 +88,10 @@ if __name__ == "__main__":
 
                 if os.listdir(corpus_path)[0].endswith('.json'):
                     d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
+                    type = 1
                 else:
                     d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
+                    type = 0
 
                 print("Indexing started....")
                 start = time.time()
