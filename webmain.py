@@ -1,18 +1,17 @@
-from typing import Tuple
 from documents import DocumentCorpus, DirectoryCorpus
-from indexing import Index, InvertedIndex, SoundexIndex
+import os
+import time
+
+from flask import Flask, render_template, request
+from porter2stemmer import Porter2Stemmer
+
+from documents import DocumentCorpus, DirectoryCorpus
+from indexing import InvertedIndex
 from indexing.soundexindex import SoundexIndex
 from queries import BooleanQueryParser
 from text import EnglishTokenStream
 from text.advancedtokenprocessor import AdvancedTokenProcessor
 from text.soundextokenprocessor import SoundexTokenProcessor
-import time
-from porter2stemmer import Porter2Stemmer
-import os
-from flask import Flask, render_template, send_file, make_response, url_for, Response, redirect, request, jsonify
-
-import json
-from pathlib import Path
 
 """This basic program builds an InvertedIndex over the .JSON files in 
 the folder "all-nps-sites-extracted" of same directory as this file."""
@@ -58,7 +57,7 @@ def path_post():
     return time
 
 @app.route('/for_doc', methods=['GET', 'POST'])
-def path_post():
+def get_content():
     docID = request.form['doc_id']
     response = getDocData(docID)
     return response
