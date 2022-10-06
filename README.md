@@ -9,7 +9,7 @@ Milestone 1
 Additional Features(6 points required):
 1. Soundex Algorithm - 3points
 2. NEAR Operator - 1points
-3. WEB UI - 2points
+3. WEB UI - 2points (using Flask, Python, HTML, CSS, Bootstrap)
 
 Note: 
 Please use webmain.py for WEB GUI and main.py for without GUI
@@ -19,6 +19,7 @@ Instructions
 
 How to run Web App:
 -> First run webmain.py instead of main.py
+First you need to import Flask 
 This will create localhost web server on your machine.
 Now you can type below url in your browser to access serach engine web app.
 URL : http://127.0.0.1:5000
