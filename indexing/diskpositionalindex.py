@@ -5,18 +5,19 @@ import sqlite3
 
 
 class DiskPositionalIndex(Index):
-    def __init__(self):
+    def __init__(self, path):
         self.postingsList = []
+        self.pathDB = path + "/postings.db"
+        self.pathBin = path + "/postings.bin"
+        self.file = open(self.pathBin, "rb")
 
     def getPostings(self, term):
-        file = open("postings.bin", "rb")
-        conn = sqlite3.connect('postings.db')
+        conn = sqlite3.connect(self.pathDB)
         c = conn.cursor()
         c.execute("SELECT bytePos FROM postings WHERE term =:term", {'term': term})
         termPos = c.fetchone()
-        print(type(termPos))
-        file.seek(termPos[0])
-        file_contents = file.read()
+        self.file.seek(termPos[0])
+        file_contents = self.file.read()
         ptr = 0
         noOfDocs = struct.unpack("i", file_contents[ptr:ptr + 4])
         ptr += 4

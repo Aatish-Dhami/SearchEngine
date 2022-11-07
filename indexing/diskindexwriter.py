@@ -14,8 +14,10 @@ class DiskIndexWriter(Index):
         for a term, then write the list to disk using our format: first dft, then a doc id gap, then tftd, then a bunch
         of position gaps, repeating."""
 
-        newFile = open("postings.bin", "wb")
-        conn = sqlite3.connect('postings.db')
+        pathBin = path + "/postings.bin"
+        pathDb = path + "/postings.db"
+        newFile = open(pathBin, "wb")
+        conn = sqlite3.connect(pathDb)
         c = conn.cursor()
         c.execute("""DROP TABLE IF EXISTS postings""")
         conn.commit()
