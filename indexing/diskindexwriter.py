@@ -1,7 +1,8 @@
-from .index import Index
-from .postings import Posting
+from indexing import Index
+from postings import Posting
 import struct
 import sqlite3
+import os
 
 
 class DiskIndexWriter(Index):
