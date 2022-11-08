@@ -117,6 +117,7 @@ if __name__ == "__main__":
         else:
             d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
             typ = 0
+        d.documents()
 
         if mode == '1':
             while True:
@@ -217,50 +218,62 @@ if __name__ == "__main__":
         elif mode == '2':
             # Ranked query mode
             print("1. Default method")
+            print("2. tf-idf method")
+            print("3. Okapi BM25")
+            print("4. Wacky")
             choice = input()
             size_of_corpus = len([entry for entry in os.listdir(corpus_path) if os.path.isfile(os.path.join(corpus_path, entry))]) - 4
             if choice == '1':
-                query = input("Enter query: ")
-                mStream = EnglishTokenStream(StringIO(query))
-                pathDW = corpus_path + "/docWeights.bin"
-                accumulator_dict = {}
+                while True:
+                    query = input("Enter query: ")
+                    if query == ":q":
+                        break
+                    mStream = EnglishTokenStream(StringIO(query))
+                    pathDW = corpus_path + "/docWeights.bin"
+                    accumulator_dict = {}
 
-                for term in mStream:
-                    processed_token_list = token_processor.process_token(term)
-                    # calculate wqt
-                    wqt = disk_positional_index.getWqt(processed_token_list[-1], size_of_corpus)
-                    # for every doc in term calculate wdt x wqt
-                    tPostingList = disk_positional_index.getPostings(processed_token_list[-1])
-                    for posting in tPostingList:
-                        # compute wqt * wdt
-                        temp = posting.get_wdt() * wqt
-                        # Get LD
-                        file = open(pathDW, "rb")
-                        file.seek(8 * posting.doc_id)
-                        file_contents = file.read(8)
-                        ld = struct.unpack("d", file_contents)
-                        if posting.doc_id in accumulator_dict:
-                            # Increment
-                            accumulator_dict[posting.doc_id] += (temp / ld)
-                        else:
-                            # Create new
-                            accumulator_dict[posting.doc_id] = (temp / ld)
+                    for term in mStream:
+                        processed_token_list = token_processor.process_token(term)
+                        # calculate wqt
+                        wqt = disk_positional_index.getWqt(processed_token_list[-1], size_of_corpus)
+                        # for every doc in term calculate wdt x wqt
+                        tPostingList = disk_positional_index.getPostings(processed_token_list[-1])
+                        for posting in tPostingList:
+                            # compute wqt * wdt
+                            temp = posting.get_wdt() * wqt
+                            # Get LD
+                            file = open(pathDW, "rb")
+                            file.seek(8 * posting.doc_id)
+                            file_contents = file.read(8)
+                            ld = struct.unpack("d", file_contents)
+                            if posting.doc_id in accumulator_dict:
+                                # Increment
+                                accumulator_dict[posting.doc_id] += (temp / ld)
+                            else:
+                                # Create new
+                                accumulator_dict[posting.doc_id] = (temp / ld)
 
-                accumulator_dict = OrderedDict(sorted(accumulator_dict.items(),
-                                                  key=lambda item: item[1],
-                                                  reverse=True))
+                    accumulator_dict = OrderedDict(sorted(accumulator_dict.items(),
+                                                      key=lambda item: item[1],
+                                                      reverse=True))
 
-                out = dict(itertools.islice(accumulator_dict.items(), 10))
-                for key, value in out.items():
-                    print(d.get_document(key).getTitle, end="")
-                    print(" - " + str(value))
-
+                    out = dict(itertools.islice(accumulator_dict.items(), 10))
+                    for key, value in out.items():
+                        print(d.get_document(key).getTitle, end="")
+                        print(" - " + str(value))
+            elif choice == '2':
+                print("This method is work in progress. Coming Soon")
+            elif choice == '3':
+                print("This method is work in progress. Coming Soon")
+            elif choice == '4':
+                print("This method is work in progress. Coming Soon")
             else:
                 print("Invalid Input")
         else:
             print("Invalid Input")
     else:
         print("Invalid Input")
+
 # test Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/test
 # Moby Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/MobyDick10Chapters
 # Npss Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/all-nps-sites-extracted
