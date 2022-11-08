@@ -31,3 +31,7 @@ class InvertedIndex(Index):
 
     def getVocabulary(self) -> Iterable[str]:
         return sorted(list(self.vocab.keys()))
+
+    def getEntireVocab(self) -> dict:
+        """Returns entire dictionary of vocabulary"""
+        return self.vocab

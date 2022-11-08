@@ -38,10 +38,19 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
             processed_token_list = token_processor.process_token(s)
             ind.add_term(processed_token_list, d.id, position + 1)
 
-            # calculating wdt and adding to sum
-            this_doc_hash[processed_token_list[-1]] = len(ind.getPostings(processed_token_list[-1]))
-            temp = np.log(this_doc_hash[processed_token_list[-1]]) + 1
-            wdt_sum += temp * temp
+            # calculating tftd
+            if processed_token_list[-1] in this_doc_hash.keys():
+                this_doc_hash[processed_token_list[-1]] += 1
+            else:
+                this_doc_hash[processed_token_list[-1]] = 1
+
+        # Calculate (wdt)^2 sum
+        for key, value in this_doc_hash.items():
+            # Get wdt for every term from tftd using this_doc_hash
+            wdt = 1 + np.log(value)
+            wdt_sum += wdt * wdt
+
+        # Calculate ld and insert into ld dict for this document
         ld_dict[d.id] = math.sqrt(wdt_sum)
 
         # getting authors for soundex
@@ -74,7 +83,7 @@ if __name__ == "__main__":
     print("2. Query Corpus")
     query_build_inp = input()
 
-    if query_build_inp == 1:
+    if query_build_inp == '1':
         typ = -1
         if os.listdir(corpus_path)[0].endswith('.json'):
             d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
@@ -90,7 +99,7 @@ if __name__ == "__main__":
         elapsed = time.time() - start
         print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
                                                                    time.gmtime(elapsed)))
-    elif query_build_inp == 2:
+    elif query_build_inp == '2':
         query = ""
         while True:
             pList = []

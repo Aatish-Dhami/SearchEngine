@@ -1,5 +1,5 @@
 from indexing import Index
-from postings import Posting
+from indexing import Posting
 import struct
 import sqlite3
 import os
@@ -28,13 +28,13 @@ class DiskIndexWriter(Index):
                     bytePos integer
                     )""")
         conn.commit()
-        vocab = index
 
         # Writing ldDict
         for key, value in ld_dict.items():
             ldFile.write(struct.pack("d", value))
 
-        for key, postingList in vocab.items():
+        voc = index.getEntireVocab()
+        for key, postingList in voc.items():
             bytePositionOfTerm = newFile.tell()
             c.execute("INSERT INTO postings VALUES (:term, :pos)", {'term': key, 'pos': bytePositionOfTerm})
             conn.commit()

@@ -2,12 +2,17 @@ from abc import ABC, abstractmethod
 from typing import Iterable
 from .postings import Posting
 
+
 class Index(ABC):
     """An Index can retrieve postings for a term from a data structure associating terms and the documents
     that contain them."""
 
     def getPostings(self, term : str) -> Iterable[Posting]:
         """Retrieves a sequence of Postings of documents that contain the given term."""
+        pass
+
+    def getPostingsWithPositions(self, term) -> Iterable[Posting]:
+        """Retrieves a sequence of Postings of documents that contain the given term with its position."""
         pass
 
     def getVocabulary(self) -> list[str]:

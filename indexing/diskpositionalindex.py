@@ -1,3 +1,4 @@
+from typing import Iterable
 from indexing import Index
 from postings import Posting
 import struct
@@ -12,7 +13,7 @@ class DiskPositionalIndex(Index):
         self.pathLDBin = path + "/docWeights.bin"
         self.file = open(self.pathBin, "rb")
 
-    def getPostings(self, term):
+    def getPostingsWithPositions(self, term) -> Iterable[Posting]:
         conn = sqlite3.connect(self.pathDB)
         c = conn.cursor()
         c.execute("SELECT bytePos FROM postings WHERE term =:term", {'term': term})
@@ -36,5 +37,27 @@ class DiskPositionalIndex(Index):
                 ptr += 4
                 posting.add_position(poss[0] + previous_poss)
                 previous_poss = poss[0]
+            self.postingsList.append(posting)
+        return self.postingsList
+
+    def getPostings(self, term) -> Iterable[Posting]:
+        conn = sqlite3.connect(self.pathDB)
+        c = conn.cursor()
+        c.execute("SELECT bytePos FROM postings WHERE term =:term", {'term': term})
+        termPos = c.fetchone()
+        self.file.seek(termPos[0])
+        file_contents = self.file.read()
+        ptr = 0
+        noOfDocs = struct.unpack("i", file_contents[ptr:ptr + 4])
+        ptr += 4
+        previous_docId = 0
+        for i in range(noOfDocs[0]):
+            docId = struct.unpack("i", file_contents[ptr:ptr + 4])
+            ptr += 4
+            posting = Posting(docId[0] + previous_docId)
+            previous_docId = docId[0]
+            tftd = struct.unpack("i", file_contents[ptr:ptr + 4])
+            ptr += 4
+            ptr += (tftd[0] * 4)
             self.postingsList.append(posting)
         return self.postingsList
