@@ -19,8 +19,10 @@ class DirectoryCorpus:
         It is recommended that you use the static method load_text_directory rather than construct a DirectoryCorpus directly.
         
         :param Path abs_path: the absolute path of the directory to load.
-        :param file_filter: a predicate function, identifying whether to load a particular file Path found in the corpus. Defaults to always returning True.
-        :param dict factories: a dictionary of factory functions, mapping from a file extension (like .txt) to a function that constructs a Document-derived object for a given Path parameter.
+        :param file_filter: a predicate function, identifying whether to load a particular file Path found in the corpus.
+         Defaults to always returning True.
+        :param dict factories: a dictionary of factory functions, mapping from a file extension (like .txt) to a function
+        that constructs a Document-derived object for a given Path parameter.
         """
         self.corpus_path = abs_path
         self.file_filter = file_filter

@@ -20,6 +20,8 @@ class Posting:
 
     def get_wdt(self):
         # returns the frequency of that term in the document
-        temp = len(self.position)
-        return np.log(temp) + 1
+        return self.wdt
 
+    def set_wdt(self, value):
+        # sets the value of wdt for this particular posting for its term
+        self.wdt = 1 + np.log(value)
