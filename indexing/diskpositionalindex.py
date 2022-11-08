@@ -10,8 +10,10 @@ class DiskPositionalIndex(Index):
     def __init__(self, path):
         self.pathDB = path + "/postings.db"
         self.pathBin = path + "/postings.bin"
-        self.pathLDBin = path + "/docWeights.bin"
+        self.pathSDX = path + "/soundex.bin"
+        self.pathSdxDB = path + "/soundex.db"
         self.file = open(self.pathBin, "rb")
+        self.sfile = open(self.pathSDX, "rb")
 
     def getPostings(self, term) -> Iterable[Posting]:
         postingList = []
@@ -63,6 +65,27 @@ class DiskPositionalIndex(Index):
             tftd = struct.unpack("i", file_contents[ptr:ptr + 4])
             ptr += 4
             ptr += (tftd[0] * 4)
+            postingList.append(posting)
+        conn.close()
+        return postingList
+
+    def getPostingsSoundex(self, term) -> Iterable[Posting]:
+        postingList = []
+        conn = sqlite3.connect(self.pathSdxDB)
+        c = conn.cursor()
+        c.execute("SELECT bytePos FROM soundex WHERE term =:term", {'term': term})
+        termPos = c.fetchone()
+        self.sfile.seek(termPos[0])
+        file_contents = self.sfile.read()
+        ptr = 0
+        dft = struct.unpack("i", file_contents[ptr:ptr + 4])
+        ptr += 4
+        previous_docId = 0
+        for i in range(dft[0]):
+            docId = struct.unpack("i", file_contents[ptr:ptr + 4])
+            ptr += 4
+            posting = Posting(docId[0] + previous_docId)
+            previous_docId = docId[0]
             postingList.append(posting)
         conn.close()
         return postingList

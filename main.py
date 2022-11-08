@@ -26,6 +26,7 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
     soundex_processor = SoundexTokenProcessor()
     ind = InvertedIndex()
     soundex = SoundexIndex()
+    diw = DiskIndexWriter()
     ld_dict = {}
 
     for d in corpus:
@@ -56,19 +57,9 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
             auth = EnglishTokenStream(d.getAuthor())
             for ss in auth:
                 soundex.add_term(soundex_processor.process_token(ss), d.id)
-        # if type == 0:
-        #     for position, s in enumerate(stream):
-        #         ind.add_term(token_processor.process_token(s), d.id, position + 1)
-        # else:
-        #     auth = EnglishTokenStream(d.getAuthor())
-        #     for position, s in enumerate(stream):
-        #         ind.add_term(token_processor.process_token(s), d.id, position + 1)
-        #
-        #     for ss in auth:
-        #         soundex.add_term(soundex_processor.process_token(ss), d.id)
 
-    diw = DiskIndexWriter()
     diw.writeIndex(ind, corpus_path, ld_dict)
+    diw.writeSoundexIndex(soundex, corpus_path)
 
 
 if __name__ == "__main__":
@@ -122,17 +113,17 @@ if __name__ == "__main__":
                         print(Porter2Stemmer().stem(query[5:]))
                         continue
                     # TODO: Do the same for Soundex
-                    # elif query[1:7] == "author":
-                    #     postings = soundex_index.getPostings(SoundexTokenProcessor().process_token(query[8:]))
-                    #     for p in postings:
-                    #         auth = EnglishTokenStream(d.get_document(p.doc_id).getAuthor())
-                    #         print(f"Title: {d.get_document(p.doc_id).getTitle}")
-                    #         print("Author:", end=" ")
-                    #         for ss in auth:
-                    #             print(ss, end=" ")
-                    #         print()
-                    #     print(f"Total documents with author name '{query[8:]}' in it: {len(postings)}")
-                    #     continue
+                    elif query[1:7] == "author":
+                        postings = disk_positional_index.getPostingsSoundex(SoundexTokenProcessor().process_token(query[8:]))
+                        for p in postings:
+                            auth = EnglishTokenStream(d.get_document(p.doc_id).getAuthor())
+                            print(f"Title: {d.get_document(p.doc_id).getTitle}")
+                            print("Author:", end=" ")
+                            for ss in auth:
+                                print(ss, end=" ")
+                            print()
+                        print(f"Total documents with author name '{query[8:]}' in it: {len(postings)}")
+                        continue
                     elif query[1:6] == "index":
                         # TODO - Restart program - Done
                         corpus_path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/" + query[7:]
@@ -246,7 +237,7 @@ if __name__ == "__main__":
                                 # Create new
                                 accumulator_dict[posting.doc_id] = (temp / ld)
 
-                    heap = [(-value, key) for key,value in accumulator_dict.items()]
+                    heap = [(-value, key) for key, value in accumulator_dict.items()]
                     largest = hq.nsmallest(10, heap)
                     largest = [(key, -value) for value, key in largest]
                     for tup in largest:

@@ -52,3 +52,31 @@ class DiskIndexWriter(Index):
                     # Writing positions
                     newFile.write(struct.pack("i", pos - previous_pos))
                     previous_pos = pos
+
+    def writeSoundexIndex(self, index, path):
+        pathSDX = path + "/soundex.bin"
+        pathSdxDB = path + "/soundex.db"
+        newFile = open(pathSDX, "wb")
+        conn = sqlite3.connect(pathSdxDB)
+        c = conn.cursor()
+        c.execute("""DROP TABLE IF EXISTS soundex""")
+        conn.commit()
+        c.execute("""CREATE TABLE soundex (
+                        term text,
+                        bytePos integer
+                        )""")
+        conn.commit()
+
+        voc = index.getEntireVocab()
+
+        for key, postingList in voc.items():
+            bytePositionOfTerm = newFile.tell()
+            c.execute("INSERT INTO postings VALUES (:term, :pos)", {'term': key, 'pos': bytePositionOfTerm})
+            conn.commit()
+            # Writing dft
+            newFile.write(struct.pack("i", len(postingList)))
+            previous_id = 0
+            for posting in postingList:
+                # Writing doc_id
+                newFile.write(struct.pack("i", posting.get_document_id() - previous_id))
+                previous_id = posting.get_document_id()

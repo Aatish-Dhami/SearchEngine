@@ -18,11 +18,16 @@ class SoundexIndex(Index):
             # If docId is not same we append a new posting with different docID and first position encountered.
             if self.vocab.get(hashcode)[-1].doc_id != doc_id:
                 self.vocab[hashcode].append(Posting(doc_id))
-            # But If the docId is same we skip it..
+            # But If the docId is same we skip it...
 
     def getPostings(self, hashcode: str) -> Iterable[Posting]:
         """Returns a list of Postings for all documents that contain the given hash."""
         return self.vocab.get(hashcode, [])
 
     def getVocabulary(self) -> Iterable[str]:
+        """Returns list of vocabulary terms in a sorted manner"""
         return sorted(list(self.vocab.keys()))
+
+    def getEntireVocab(self) -> dict:
+        """Returns entire dictionary of vocabulary"""
+        return self.vocab
