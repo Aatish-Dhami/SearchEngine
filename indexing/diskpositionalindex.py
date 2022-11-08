@@ -9,6 +9,7 @@ class DiskPositionalIndex(Index):
         self.postingsList = []
         self.pathDB = path + "/postings.db"
         self.pathBin = path + "/postings.bin"
+        self.pathLDBin = path + "/docWeights.bin"
         self.file = open(self.pathBin, "rb")
 
     def getPostings(self, term):
