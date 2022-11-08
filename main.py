@@ -1,12 +1,6 @@
 import math
-import sqlite3
 import struct
-from collections import OrderedDict
-from typing import Tuple
 from io import StringIO
-import numpy as np
-import itertools
-
 from documents import DocumentCorpus, DirectoryCorpus
 from indexing import Index, InvertedIndex, SoundexIndex, DiskIndexWriter
 from indexing import DiskPositionalIndex
@@ -19,8 +13,7 @@ import time
 from porter2stemmer import Porter2Stemmer
 import os
 import numpy as np
-import json
-from pathlib import Path
+import heapq as hq
 
 """This basic program builds an InvertedIndex over the .JSON files in 
 the folder "all-nps-sites-extracted" of same directory as this file."""
@@ -253,14 +246,13 @@ if __name__ == "__main__":
                                 # Create new
                                 accumulator_dict[posting.doc_id] = (temp / ld)
 
-                    accumulator_dict = OrderedDict(sorted(accumulator_dict.items(),
-                                                      key=lambda item: item[1],
-                                                      reverse=True))
+                    heap = [(-value, key) for key,value in accumulator_dict.items()]
+                    largest = hq.nsmallest(10, heap)
+                    largest = [(key, -value) for value, key in largest]
+                    for tup in largest:
+                        print(d.get_document(int(tup[0])).getTitle, end="")
+                        print(" - " + str(tup[1][0]))
 
-                    out = dict(itertools.islice(accumulator_dict.items(), 10))
-                    for key, value in out.items():
-                        print(d.get_document(key).getTitle, end="")
-                        print(" - " + str(value))
             elif choice == '2':
                 print("This method is work in progress. Coming Soon")
             elif choice == '3':
