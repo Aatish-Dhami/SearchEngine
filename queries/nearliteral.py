@@ -21,8 +21,8 @@ class NearLiteral(QueryComponent):
         lsofpostings = []
         for i in range(self.k):
             lsofpostings.append(_positional_intersect(index.getPostings(token_processor.process_token(self.term1)[-1]),
-                                  index.getPostings(token_processor.process_token(self.term2)[-1]),
-                                  i+1))
+                                                      index.getPostings(token_processor.process_token(self.term2)[-1]),
+                                                      i + 1))
 
         result = []
         position = 0

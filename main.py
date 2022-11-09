@@ -1,7 +1,9 @@
-from typing import Tuple
+import math
+import struct
+from io import StringIO
 from documents import DocumentCorpus, DirectoryCorpus
-from indexing import Index, InvertedIndex, SoundexIndex
-from indexing.soundexindex import SoundexIndex
+from indexing import InvertedIndex, SoundexIndex, DiskIndexWriter
+from indexing import DiskPositionalIndex
 from queries import BooleanQueryParser
 from text import EnglishTokenStream
 from text.advancedtokenprocessor import AdvancedTokenProcessor
@@ -9,73 +11,110 @@ from text.soundextokenprocessor import SoundexTokenProcessor
 import time
 from porter2stemmer import Porter2Stemmer
 import os
-import json
-from pathlib import Path
+import numpy as np
+import heapq as hq
 
 
-"""This basic program builds an InvertedIndex over the .JSON files in 
-the folder "all-nps-sites-extracted" of same directory as this file."""
+def printDoc(doc_id, dd):
+    cont = EnglishTokenStream(dd.get_document(int(doc_id)).getContent())
+    count = 0
+    for ss in cont:
+        if count == 20:
+            count = 0
+            print()
+        print(ss, end=" ")
+        count += 1
 
 
-def index_corpus(corpus: DocumentCorpus, type: int) -> tuple[InvertedIndex, SoundexIndex]:
-    # Type 0 - .txt
-    # Type 1 - .json
-    token_processor = AdvancedTokenProcessor()
+def load_directory(path):
+    if os.listdir(path)[0].endswith('.json'):
+        dd = DirectoryCorpus.load_json_directory(path, ".json")
+        fTyp = 1
+    else:
+        dd = DirectoryCorpus.load_text_directory(path, ".txt")
+        fTyp = 0
+    return dd, fTyp
+
+
+def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
+    # Typ 0 - .txt
+    # Typ 1 - .json
+    print("Indexing started....")
+    start = time.time()
+    tkn_processor = AdvancedTokenProcessor()
     soundex_processor = SoundexTokenProcessor()
-    ind = InvertedIndex()
-    soundex = SoundexIndex()
+    inverted_index = InvertedIndex()
+    soundex_index = SoundexIndex()
+    diw = DiskIndexWriter()
+    docWeights_dict = {}
+    docLengthD_dict = {}
+    docLengthA = 0
 
     for d in corpus:
         stream = EnglishTokenStream(d.getContent())
-        if type == 0:
-            for position, s in enumerate(stream):
-                ind.add_term(token_processor.process_token(s), d.id, position + 1)
-        else:
+        wdt_sum = 0
+        this_doc_hash = {}
+        number_of_tokens = 0
+
+        # Adding tokens to index
+        for position, s in enumerate(stream):
+            processed_token_list = tkn_processor.process_token(s)
+            inverted_index.add_term(processed_token_list, d.id, position + 1)
+            number_of_tokens += 1
+
+            # calculating tftd
+            if processed_token_list[-1] in this_doc_hash.keys():
+                this_doc_hash[processed_token_list[-1]] += 1
+            else:
+                this_doc_hash[processed_token_list[-1]] = 1
+
+        # Calculate (wdt)^2 sum
+        for key, value in this_doc_hash.items():
+            # Get wdt for every term from tftd using this_doc_hash
+            wdt = 1 + np.log(value)
+            wdt_sum += wdt * wdt
+
+        # Calculate ld and insert into ld dict for this document
+        docWeights_dict[d.id] = math.sqrt(wdt_sum)
+
+        # Insert No. of Tokens in the dictionary
+        docLengthD_dict[d.id] = number_of_tokens
+
+        # getting authors for soundex
+        if typ == 1:
             auth = EnglishTokenStream(d.getAuthor())
-            for position, s in enumerate(stream):
-                ind.add_term(token_processor.process_token(s), d.id, position + 1)
-
             for ss in auth:
-                soundex.add_term(soundex_processor.process_token(ss), d.id)
+                soundex_index.add_term(soundex_processor.process_token(ss), d.id)
 
-    return ind, soundex
+        # Update docLengthA
+        docLengthA += 1
 
+    # docLengthA = avg number of tokens in all documents in corpus. i.e. number of tokens of corpus/total no. of docs
+    docLengthA = len(inverted_index.getEntireVocab().keys())/docLengthA
 
-if __name__ == "__main__":
-    booleanQueryParser = BooleanQueryParser()
+    # write inverted index to disk
+    diw.writeIndex(inverted_index, corpus_path, docWeights_dict, docLengthD_dict, docLengthA)
+    # write soundex index to disk
+    diw.writeSoundexIndex(soundex_index, corpus_path)
 
-    corpus_path = input("Enter the path for corpus: ")
-    type = -1
-    if os.listdir(corpus_path)[0].endswith('.json'):
-        d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
-        type = 1
-    else:
-        d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
-        type = 0
-
-    print("Indexing started....")
-    start = time.time()
-    # Build the index over this directory.
-
-    inverted_index, soundex_index = index_corpus(d, type)
     elapsed = time.time() - start
     print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
                                                                time.gmtime(elapsed)))
 
-    query = ""
+
+def boolean_mode(dpIndex, dd, path):
     while True:
         pList = []
         query = input("Enter query: ")
-        # TODO: Do special Queries - Done
         if query[0] == ":":
             if query[1:5] == "stem":
                 print(Porter2Stemmer().stem(query[5:]))
                 continue
             elif query[1:7] == "author":
-                postings = soundex_index.getPostings(SoundexTokenProcessor().process_token(query[8:]))
+                postings = dpIndex.getPostingsSoundex(SoundexTokenProcessor().process_token(query[8:]))
                 for p in postings:
-                    auth = EnglishTokenStream(d.get_document(p.doc_id).getAuthor())
-                    print(f"Title: {d.get_document(p.doc_id).getTitle}")
+                    auth = EnglishTokenStream(dd.get_document(p.doc_id).getAuthor())
+                    print(f"Title: {dd.get_document(p.doc_id).getTitle}")
                     print("Author:", end=" ")
                     for ss in auth:
                         print(ss, end=" ")
@@ -83,26 +122,13 @@ if __name__ == "__main__":
                 print(f"Total documents with author name '{query[8:]}' in it: {len(postings)}")
                 continue
             elif query[1:6] == "index":
-                # TODO - Restart program - Done
-                corpus_path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/" + query[7:]
-
-                if os.listdir(corpus_path)[0].endswith('.json'):
-                    d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
-                    type = 1
-                else:
-                    d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
-                    type = 0
-
-                print("Indexing started....")
-                start = time.time()
+                path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/" + query[7:]
+                dd, f_type = load_directory(path)
                 # Build the index over this directory.
-                inverted_index, soundex_index = index_corpus(d, type)
-                elapsed = time.time() - start
-                print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
-                                                                           time.gmtime(elapsed)))
+                index_corpus(dd, f_type, path)
                 continue
             elif query[1:6] == "vocab":
-                vocab = inverted_index.getVocabulary()
+                vocab = dpIndex.getVocabulary()
                 if len(vocab) > 1000:
                     for i in range(1000):
                         print(vocab[i])
@@ -118,38 +144,24 @@ if __name__ == "__main__":
                 continue
 
         # Processing the query as terms
-        postings = booleanQueryParser.parse_query(query).get_postings(inverted_index)
+        postings = booleanQueryParser.parse_query(query).get_postings(dpIndex)
 
         print(f"The query '{query}' is found in documents: ")
         doc_ids = []
         for posting in postings:
-            pList.append(d.get_document(posting.doc_id).getTitle)
-            doc_ids.append(posting.doc_id)
+            print(d.get_document(posting.get_document_id()).getTitle, end="")
+            print(" (DOCID " + str(posting.get_document_id()) + ")")
+            doc_ids.append(posting.get_document_id())
+        print(f"Length of Documents: {len(postings)}")
 
-        if len(pList) == 0:
-            print("No documents found")
-            continue
-        else:
-            for ele in postings:
-                print(f"{d.get_document(ele.doc_id)}")
-            print(f"Length of Documents: {len(pList)}")
-
-        user_choice = ""
         while True:
             user_choice = input("Would you like to view any document from the list?(y/n)")
             if user_choice == 'y' or user_choice == 'Y':
                 doc_choice = input("Please choose the doc_id of the document: ")
+
                 if doc_choice.isnumeric() and int(doc_choice) in doc_ids:
-                    #TODO: print that document
-                    cont = EnglishTokenStream(d.get_document(int(doc_choice)).getContent())
-                    strCont = []
-                    count = 0
-                    for ss in cont:
-                        if count == 20:
-                            count = 0
-                            print()
-                        print(ss, end=" ")
-                        count += 1
+                    printDoc(doc_choice, dd)
+                    print()
                 else:
                     print("Not a valid option")
             elif user_choice == 'n' or user_choice == 'N':
@@ -157,6 +169,93 @@ if __name__ == "__main__":
             else:
                 print("Not a valid input")
 
+
+def ranked_mode(dp_index, dd, path):
+    print("1. Default method")
+    print("2. tf-idf method")
+    print("3. Okapi BM25")
+    print("4. Wacky")
+    choice = input()
+    size_of_corpus = len(
+        [entry for entry in os.listdir(path) if os.path.isfile(os.path.join(path, entry))]) - 4
+    if choice == '1':
+        while True:
+            query = input("Enter query: ")
+            if query == ":q":
+                break
+            mStream = EnglishTokenStream(StringIO(query))
+            pathDW = path + "/docWeights.bin"
+            accumulator_dict = {}
+
+            for term in mStream:
+                processed_token_list = token_processor.process_token(term)
+                # calculate wqt
+                wqt = dp_index.getWqt(processed_token_list[-1], size_of_corpus)
+                # for every doc in term calculate wdt x wqt
+                tPostingList = dp_index.getPostings(processed_token_list[-1])
+                for posting in tPostingList:
+                    # compute wqt * wdt
+                    temp = posting.get_wdt() * wqt
+                    # Get LD
+                    file = open(pathDW, "rb")
+                    file.seek(8 * posting.doc_id)
+                    file_contents = file.read(8)
+                    ld = struct.unpack("d", file_contents)
+                    if posting.doc_id in accumulator_dict:
+                        # Increment
+                        accumulator_dict[posting.doc_id] += (temp / ld)
+                    else:
+                        # Create new
+                        accumulator_dict[posting.doc_id] = (temp / ld)
+
+            heap = [(-value, key) for key, value in accumulator_dict.items()]
+            largest = hq.nsmallest(10, heap)
+            largest = [(key, -value) for value, key in largest]
+            for tup in largest:
+                print(dd.get_document(int(tup[0])).getTitle, end="")
+                print(" - " + str(tup[1][0]))
+
+    elif choice == '2':
+        print("This method is work in progress. Coming Soon")
+    elif choice == '3':
+        print("This method is work in progress. Coming Soon")
+    elif choice == '4':
+        print("This method is work in progress. Coming Soon")
+    else:
+        print("Invalid Input")
+
+
+if __name__ == "__main__":
+    corpus_path = input("Enter the path for corpus: ")
+    booleanQueryParser = BooleanQueryParser()
+    token_processor = AdvancedTokenProcessor()
+    d, fType = load_directory(corpus_path)
+
+    print("1. Build Corpus")
+    print("2. Query Corpus")
+    query_build_inp = input()
+
+    if query_build_inp == '1':
+        # Build the index over this directory.
+        index_corpus(d, fType, corpus_path)
+
+    elif query_build_inp == '2':
+        disk_positional_index = DiskPositionalIndex(corpus_path)
+        query = ""
+        print("1. Boolean query Mode")
+        print("2. Ranked query Mode")
+        mode = input()
+        d.documents()
+
+        if mode == '1':
+            boolean_mode(disk_positional_index, d, corpus_path)
+        elif mode == '2':
+            # Ranked query mode
+            ranked_mode(disk_positional_index, d, corpus_path)
+        else:
+            print("Invalid Input")
+    else:
+        print("Invalid Input")
 
 # test Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/test
 # Moby Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/MobyDick10Chapters

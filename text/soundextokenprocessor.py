@@ -53,7 +53,5 @@ class SoundexTokenProcessor(TokenProcessor):
         if i < len(fhashcode):
             hashcode += fhashcode[-1]
 
-
         hashcode = hashcode[:4].ljust(4, "0")
-
         return hashcode
