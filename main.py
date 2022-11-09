@@ -2,9 +2,8 @@ import math
 import struct
 from io import StringIO
 from documents import DocumentCorpus, DirectoryCorpus
-from indexing import Index, InvertedIndex, SoundexIndex, DiskIndexWriter
+from indexing import InvertedIndex, SoundexIndex, DiskIndexWriter
 from indexing import DiskPositionalIndex
-from indexing.soundexindex import SoundexIndex
 from queries import BooleanQueryParser
 from text import EnglishTokenStream
 from text.advancedtokenprocessor import AdvancedTokenProcessor
@@ -22,7 +21,9 @@ the folder "all-nps-sites-extracted" of same directory as this file."""
 def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
     # Typ 0 - .txt
     # Typ 1 - .json
-    token_processor = AdvancedTokenProcessor()
+    print("Indexing started....")
+    start = time.time()
+    tkn_processor = AdvancedTokenProcessor()
     soundex_processor = SoundexTokenProcessor()
     ind = InvertedIndex()
     soundex = SoundexIndex()
@@ -34,7 +35,7 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
         wdt_sum = 0
         this_doc_hash = {}
         for position, s in enumerate(stream):
-            processed_token_list = token_processor.process_token(s)
+            processed_token_list = tkn_processor.process_token(s)
             ind.add_term(processed_token_list, d.id, position + 1)
 
             # calculating tftd
@@ -60,145 +61,125 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
 
     diw.writeIndex(ind, corpus_path, ld_dict)
     diw.writeSoundexIndex(soundex, corpus_path)
+    elapsed = time.time() - start
+    print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
+                                                               time.gmtime(elapsed)))
+
+
+def boolean_mode(dpIndex, dd, path):
+    while True:
+        pList = []
+        query = input("Enter query: ")
+        if query[0] == ":":
+            if query[1:5] == "stem":
+                print(Porter2Stemmer().stem(query[5:]))
+                continue
+            elif query[1:7] == "author":
+                postings = dpIndex.getPostingsSoundex(SoundexTokenProcessor().process_token(query[8:]))
+                for p in postings:
+                    auth = EnglishTokenStream(dd.get_document(p.doc_id).getAuthor())
+                    print(f"Title: {dd.get_document(p.doc_id).getTitle}")
+                    print("Author:", end=" ")
+                    for ss in auth:
+                        print(ss, end=" ")
+                    print()
+                print(f"Total documents with author name '{query[8:]}' in it: {len(postings)}")
+                continue
+            elif query[1:6] == "index":
+                path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/" + query[7:]
+                dd, f_type = load_directory(path)
+                # Build the index over this directory.
+                index_corpus(dd, f_type, path)
+                continue
+            elif query[1:6] == "vocab":
+                vocab = dpIndex.getVocabulary()
+                if len(vocab) > 1000:
+                    for i in range(1000):
+                        print(vocab[i])
+                else:
+                    for i in range(len(vocab)):
+                        print(vocab[i])
+                print(f"Length of Vocabulary: {len(vocab)}")
+                continue
+            elif query[1] == "q":
+                break
+            else:
+                print("Invalid special query")
+                continue
+
+        # Processing the query as terms
+        postings = booleanQueryParser.parse_query(query).get_postings(dpIndex)
+
+        print(f"The query '{query}' is found in documents: ")
+        doc_ids = []
+        for posting in postings:
+            print(d.get_document(posting.get_document_id()).getTitle, end="")
+            print(" (DOCID " + str(posting.get_document_id()) + ")")
+            doc_ids.append(posting.get_document_id())
+        print(f"Length of Documents: {len(postings)}")
+
+        while True:
+            user_choice = input("Would you like to view any document from the list?(y/n)")
+            if user_choice == 'y' or user_choice == 'Y':
+                doc_choice = input("Please choose the doc_id of the document: ")
+
+                if doc_choice.isnumeric() and int(doc_choice) in doc_ids:
+                    printDocument(doc_choice, dd)
+                    print()
+                else:
+                    print("Not a valid option")
+            elif user_choice == 'n' or user_choice == 'N':
+                break
+            else:
+                print("Not a valid input")
+
+
+def printDocument(doc_id, dd):
+    cont = EnglishTokenStream(dd.get_document(int(doc_id)).getContent())
+    count = 0
+    for ss in cont:
+        if count == 20:
+            count = 0
+            print()
+        print(ss, end=" ")
+        count += 1
+
+
+def load_directory(path):
+    if os.listdir(path)[0].endswith('.json'):
+        dd = DirectoryCorpus.load_json_directory(path, ".json")
+        fTyp = 1
+    else:
+        dd = DirectoryCorpus.load_text_directory(path, ".txt")
+        fTyp = 0
+    return dd, fTyp
 
 
 if __name__ == "__main__":
-    booleanQueryParser = BooleanQueryParser()
-
     corpus_path = input("Enter the path for corpus: ")
+    booleanQueryParser = BooleanQueryParser()
+    token_processor = AdvancedTokenProcessor()
+    d, fType = load_directory(corpus_path)
 
-    # TODO: Take input from user to ask for build or query the index
     print("1. Build Corpus")
     print("2. Query Corpus")
     query_build_inp = input()
 
     if query_build_inp == '1':
-        typ = -1
-        if os.listdir(corpus_path)[0].endswith('.json'):
-            d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
-            typ = 1
-        else:
-            d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
-            typ = 0
-
-        print("Indexing started....")
-        start = time.time()
         # Build the index over this directory.
-        index_corpus(d, typ, corpus_path)
-        elapsed = time.time() - start
-        print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
-                                                                   time.gmtime(elapsed)))
+        index_corpus(d, fType, corpus_path)
+
     elif query_build_inp == '2':
+        disk_positional_index = DiskPositionalIndex(corpus_path)
         query = ""
         print("1. Boolean query Mode")
         print("2. Ranked query Mode")
         mode = input()
-        disk_positional_index = DiskPositionalIndex(corpus_path)
-        token_processor = AdvancedTokenProcessor()
-        if os.listdir(corpus_path)[0].endswith('.json'):
-            d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
-            typ = 1
-        else:
-            d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
-            typ = 0
         d.documents()
 
         if mode == '1':
-            while True:
-                pList = []
-                query = input("Enter query: ")
-                # TODO: Do special Queries - Done
-                if query[0] == ":":
-                    if query[1:5] == "stem":
-                        print(Porter2Stemmer().stem(query[5:]))
-                        continue
-                    # TODO: Do the same for Soundex
-                    elif query[1:7] == "author":
-                        postings = disk_positional_index.getPostingsSoundex(SoundexTokenProcessor().process_token(query[8:]))
-                        for p in postings:
-                            auth = EnglishTokenStream(d.get_document(p.doc_id).getAuthor())
-                            print(f"Title: {d.get_document(p.doc_id).getTitle}")
-                            print("Author:", end=" ")
-                            for ss in auth:
-                                print(ss, end=" ")
-                            print()
-                        print(f"Total documents with author name '{query[8:]}' in it: {len(postings)}")
-                        continue
-                    elif query[1:6] == "index":
-                        # TODO - Restart program - Done
-                        corpus_path = "/Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/" + query[7:]
-
-                        if os.listdir(corpus_path)[0].endswith('.json'):
-                            d = DirectoryCorpus.load_json_directory(corpus_path, ".json")
-                            typ = 1
-                        else:
-                            d = DirectoryCorpus.load_text_directory(corpus_path, ".txt")
-                            typ = 0
-
-                        print("Indexing started....")
-                        start = time.time()
-                        # Build the index over this directory.
-                        index_corpus(d, typ, corpus_path)
-                        elapsed = time.time() - start
-                        print("Finished Indexing. Elapsed time = " + time.strftime(
-                            "%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
-                            time.gmtime(elapsed)))
-                        continue
-                    elif query[1:6] == "vocab":
-                        vocab = disk_positional_index.getVocabulary()
-                        if len(vocab) > 1000:
-                            for i in range(1000):
-                                print(vocab[i])
-                        else:
-                            for i in range(len(vocab)):
-                                print(vocab[i])
-                        print(f"Length of Vocabulary: {len(vocab)}")
-                        continue
-                    elif query[1] == "q":
-                        break
-                    else:
-                        print("Invalid special query")
-                        continue
-
-                # Processing the query as terms
-                postings = booleanQueryParser.parse_query(query).get_postings(disk_positional_index)
-
-                print(f"The query '{query}' is found in documents: ")
-                doc_ids = []
-                for posting in postings:
-                    pList.append(d.get_document(posting.doc_id).getTitle)
-                    doc_ids.append(posting.doc_id)
-
-                if len(pList) == 0:
-                    print("No documents found")
-                    continue
-                else:
-                    for ele in postings:
-                        print(f"{d.get_document(ele.doc_id)}")
-                    print(f"Length of Documents: {len(pList)}")
-
-                user_choice = ""
-                while True:
-                    user_choice = input("Would you like to view any document from the list?(y/n)")
-                    if user_choice == 'y' or user_choice == 'Y':
-                        doc_choice = input("Please choose the doc_id of the document: ")
-                        if doc_choice.isnumeric() and int(doc_choice) in doc_ids:
-                            # TODO: print that document
-                            cont = EnglishTokenStream(d.get_document(int(doc_choice)).getContent())
-                            strCont = []
-                            count = 0
-                            for ss in cont:
-                                if count == 20:
-                                    count = 0
-                                    print()
-                                print(ss, end=" ")
-                                count += 1
-                        else:
-                            print("Not a valid option")
-                    elif user_choice == 'n' or user_choice == 'N':
-                        break
-                    else:
-                        print("Not a valid input")
+            # TODO: call boolean
+            boolean_mode(disk_positional_index, d, corpus_path)
         elif mode == '2':
             # Ranked query mode
             print("1. Default method")
@@ -206,7 +187,8 @@ if __name__ == "__main__":
             print("3. Okapi BM25")
             print("4. Wacky")
             choice = input()
-            size_of_corpus = len([entry for entry in os.listdir(corpus_path) if os.path.isfile(os.path.join(corpus_path, entry))]) - 4
+            size_of_corpus = len(
+                [entry for entry in os.listdir(corpus_path) if os.path.isfile(os.path.join(corpus_path, entry))]) - 4
             if choice == '1':
                 while True:
                     query = input("Enter query: ")

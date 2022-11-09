@@ -71,7 +71,7 @@ class DiskIndexWriter(Index):
 
         for key, postingList in voc.items():
             bytePositionOfTerm = newFile.tell()
-            c.execute("INSERT INTO postings VALUES (:term, :pos)", {'term': key, 'pos': bytePositionOfTerm})
+            c.execute("INSERT INTO soundex VALUES (:term, :pos)", {'term': key, 'pos': bytePositionOfTerm})
             conn.commit()
             # Writing dft
             newFile.write(struct.pack("i", len(postingList)))

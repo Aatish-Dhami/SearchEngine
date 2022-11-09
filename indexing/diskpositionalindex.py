@@ -61,7 +61,7 @@ class DiskPositionalIndex(Index):
             docId = struct.unpack("i", file_contents[ptr:ptr + 4])
             ptr += 4
             posting = Posting(docId[0] + previous_docId)
-            previous_docId = docId[0]
+            previous_docId = posting.get_document_id()
             tftd = struct.unpack("i", file_contents[ptr:ptr + 4])
             ptr += 4
             ptr += (tftd[0] * 4)
@@ -85,7 +85,7 @@ class DiskPositionalIndex(Index):
             docId = struct.unpack("i", file_contents[ptr:ptr + 4])
             ptr += 4
             posting = Posting(docId[0] + previous_docId)
-            previous_docId = docId[0]
+            previous_docId = posting.get_document_id()
             postingList.append(posting)
         conn.close()
         return postingList
