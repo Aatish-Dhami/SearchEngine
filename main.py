@@ -14,8 +14,26 @@ import os
 import numpy as np
 import heapq as hq
 
-"""This basic program builds an InvertedIndex over the .JSON files in 
-the folder "all-nps-sites-extracted" of same directory as this file."""
+
+def printDoc(doc_id, dd):
+    cont = EnglishTokenStream(dd.get_document(int(doc_id)).getContent())
+    count = 0
+    for ss in cont:
+        if count == 20:
+            count = 0
+            print()
+        print(ss, end=" ")
+        count += 1
+
+
+def load_directory(path):
+    if os.listdir(path)[0].endswith('.json'):
+        dd = DirectoryCorpus.load_json_directory(path, ".json")
+        fTyp = 1
+    else:
+        dd = DirectoryCorpus.load_text_directory(path, ".txt")
+        fTyp = 0
+    return dd, fTyp
 
 
 def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
@@ -25,18 +43,24 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
     start = time.time()
     tkn_processor = AdvancedTokenProcessor()
     soundex_processor = SoundexTokenProcessor()
-    ind = InvertedIndex()
-    soundex = SoundexIndex()
+    inverted_index = InvertedIndex()
+    soundex_index = SoundexIndex()
     diw = DiskIndexWriter()
-    ld_dict = {}
+    docWeights_dict = {}
+    docLengthD_dict = {}
+    docLengthA = 0
 
     for d in corpus:
         stream = EnglishTokenStream(d.getContent())
         wdt_sum = 0
         this_doc_hash = {}
+        number_of_tokens = 0
+
+        # Adding tokens to index
         for position, s in enumerate(stream):
             processed_token_list = tkn_processor.process_token(s)
-            ind.add_term(processed_token_list, d.id, position + 1)
+            inverted_index.add_term(processed_token_list, d.id, position + 1)
+            number_of_tokens += 1
 
             # calculating tftd
             if processed_token_list[-1] in this_doc_hash.keys():
@@ -51,16 +75,28 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
             wdt_sum += wdt * wdt
 
         # Calculate ld and insert into ld dict for this document
-        ld_dict[d.id] = math.sqrt(wdt_sum)
+        docWeights_dict[d.id] = math.sqrt(wdt_sum)
+
+        # Insert No. of Tokens in the dictionary
+        docLengthD_dict[d.id] = number_of_tokens
 
         # getting authors for soundex
         if typ == 1:
             auth = EnglishTokenStream(d.getAuthor())
             for ss in auth:
-                soundex.add_term(soundex_processor.process_token(ss), d.id)
+                soundex_index.add_term(soundex_processor.process_token(ss), d.id)
 
-    diw.writeIndex(ind, corpus_path, ld_dict)
-    diw.writeSoundexIndex(soundex, corpus_path)
+        # Update docLengthA
+        docLengthA += 1
+
+    # docLengthA = avg number of tokens in all documents in corpus. i.e. number of tokens of corpus/total no. of docs
+    docLengthA = len(inverted_index.getEntireVocab().keys())/docLengthA
+
+    # write inverted index to disk
+    diw.writeIndex(inverted_index, corpus_path, docWeights_dict, docLengthD_dict, docLengthA)
+    # write soundex index to disk
+    diw.writeSoundexIndex(soundex_index, corpus_path)
+
     elapsed = time.time() - start
     print("Finished Indexing. Elapsed time = " + time.strftime("%H:%M:%S.{}".format(str(elapsed % 1)[2:])[:11],
                                                                time.gmtime(elapsed)))
@@ -124,7 +160,7 @@ def boolean_mode(dpIndex, dd, path):
                 doc_choice = input("Please choose the doc_id of the document: ")
 
                 if doc_choice.isnumeric() and int(doc_choice) in doc_ids:
-                    printDocument(doc_choice, dd)
+                    printDoc(doc_choice, dd)
                     print()
                 else:
                     print("Not a valid option")
@@ -134,25 +170,59 @@ def boolean_mode(dpIndex, dd, path):
                 print("Not a valid input")
 
 
-def printDocument(doc_id, dd):
-    cont = EnglishTokenStream(dd.get_document(int(doc_id)).getContent())
-    count = 0
-    for ss in cont:
-        if count == 20:
-            count = 0
-            print()
-        print(ss, end=" ")
-        count += 1
+def ranked_mode(dp_index, dd, path):
+    print("1. Default method")
+    print("2. tf-idf method")
+    print("3. Okapi BM25")
+    print("4. Wacky")
+    choice = input()
+    size_of_corpus = len(
+        [entry for entry in os.listdir(path) if os.path.isfile(os.path.join(path, entry))]) - 4
+    if choice == '1':
+        while True:
+            query = input("Enter query: ")
+            if query == ":q":
+                break
+            mStream = EnglishTokenStream(StringIO(query))
+            pathDW = path + "/docWeights.bin"
+            accumulator_dict = {}
 
+            for term in mStream:
+                processed_token_list = token_processor.process_token(term)
+                # calculate wqt
+                wqt = dp_index.getWqt(processed_token_list[-1], size_of_corpus)
+                # for every doc in term calculate wdt x wqt
+                tPostingList = dp_index.getPostings(processed_token_list[-1])
+                for posting in tPostingList:
+                    # compute wqt * wdt
+                    temp = posting.get_wdt() * wqt
+                    # Get LD
+                    file = open(pathDW, "rb")
+                    file.seek(8 * posting.doc_id)
+                    file_contents = file.read(8)
+                    ld = struct.unpack("d", file_contents)
+                    if posting.doc_id in accumulator_dict:
+                        # Increment
+                        accumulator_dict[posting.doc_id] += (temp / ld)
+                    else:
+                        # Create new
+                        accumulator_dict[posting.doc_id] = (temp / ld)
 
-def load_directory(path):
-    if os.listdir(path)[0].endswith('.json'):
-        dd = DirectoryCorpus.load_json_directory(path, ".json")
-        fTyp = 1
+            heap = [(-value, key) for key, value in accumulator_dict.items()]
+            largest = hq.nsmallest(10, heap)
+            largest = [(key, -value) for value, key in largest]
+            for tup in largest:
+                print(dd.get_document(int(tup[0])).getTitle, end="")
+                print(" - " + str(tup[1][0]))
+
+    elif choice == '2':
+        print("This method is work in progress. Coming Soon")
+    elif choice == '3':
+        print("This method is work in progress. Coming Soon")
+    elif choice == '4':
+        print("This method is work in progress. Coming Soon")
     else:
-        dd = DirectoryCorpus.load_text_directory(path, ".txt")
-        fTyp = 0
-    return dd, fTyp
+        print("Invalid Input")
 
 
 if __name__ == "__main__":
@@ -178,62 +248,10 @@ if __name__ == "__main__":
         d.documents()
 
         if mode == '1':
-            # TODO: call boolean
             boolean_mode(disk_positional_index, d, corpus_path)
         elif mode == '2':
             # Ranked query mode
-            print("1. Default method")
-            print("2. tf-idf method")
-            print("3. Okapi BM25")
-            print("4. Wacky")
-            choice = input()
-            size_of_corpus = len(
-                [entry for entry in os.listdir(corpus_path) if os.path.isfile(os.path.join(corpus_path, entry))]) - 4
-            if choice == '1':
-                while True:
-                    query = input("Enter query: ")
-                    if query == ":q":
-                        break
-                    mStream = EnglishTokenStream(StringIO(query))
-                    pathDW = corpus_path + "/docWeights.bin"
-                    accumulator_dict = {}
-
-                    for term in mStream:
-                        processed_token_list = token_processor.process_token(term)
-                        # calculate wqt
-                        wqt = disk_positional_index.getWqt(processed_token_list[-1], size_of_corpus)
-                        # for every doc in term calculate wdt x wqt
-                        tPostingList = disk_positional_index.getPostings(processed_token_list[-1])
-                        for posting in tPostingList:
-                            # compute wqt * wdt
-                            temp = posting.get_wdt() * wqt
-                            # Get LD
-                            file = open(pathDW, "rb")
-                            file.seek(8 * posting.doc_id)
-                            file_contents = file.read(8)
-                            ld = struct.unpack("d", file_contents)
-                            if posting.doc_id in accumulator_dict:
-                                # Increment
-                                accumulator_dict[posting.doc_id] += (temp / ld)
-                            else:
-                                # Create new
-                                accumulator_dict[posting.doc_id] = (temp / ld)
-
-                    heap = [(-value, key) for key, value in accumulator_dict.items()]
-                    largest = hq.nsmallest(10, heap)
-                    largest = [(key, -value) for value, key in largest]
-                    for tup in largest:
-                        print(d.get_document(int(tup[0])).getTitle, end="")
-                        print(" - " + str(tup[1][0]))
-
-            elif choice == '2':
-                print("This method is work in progress. Coming Soon")
-            elif choice == '3':
-                print("This method is work in progress. Coming Soon")
-            elif choice == '4':
-                print("This method is work in progress. Coming Soon")
-            else:
-                print("Invalid Input")
+            ranked_mode(disk_positional_index, d, corpus_path)
         else:
             print("Invalid Input")
     else:
