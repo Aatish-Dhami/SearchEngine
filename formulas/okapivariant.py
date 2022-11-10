@@ -11,8 +11,6 @@ class OkapiVariant(Variants):
         pathDW = path + "/docWeights.bin"
         pathSC = path + "/sizeOfCorpus.bin"
         pathDLA = path + "/docLengthA.bin"
-        pathDLD = path + "/docLengthD.bin"
-        dldFile = open(pathDLD, "rb")
         socFile = open(pathSC, "rb")
         dlaFile = open(pathDLA, "rb")
         dwfile = open(pathDW, "rb")
@@ -34,16 +32,16 @@ class OkapiVariant(Variants):
             for posting in tPostingList:
 
                 # get docLengthD
-                dldFile.seek(8 * posting.doc_id)
-                doclengthD = struct.unpack("d", dldFile.read(8))[0]
+                dwfile.seek((32 * posting.doc_id) + 8)
+                doclengthD = struct.unpack("d", dwfile.read(8))[0]
 
                 # compute wqt * wdt
                 tftd = len(posting.get_positions())
                 temp = self._get_wdt(self, tftd, doclengthD, docLengthA) * wqt
 
-                # Get LD
-                dwfile.seek(8 * posting.doc_id)
-                ld = struct.unpack("d", dwfile.read(8))[0]
+                # get ld
+                ld = self._get_ld(self)
+
                 if posting.doc_id in accumulator_dict:
                     # Increment
                     accumulator_dict[posting.doc_id] += (temp / ld)
@@ -58,3 +56,6 @@ class OkapiVariant(Variants):
 
     def _get_wdt(self, tftd, docLengthD, docLengthA):
         return (2.2 * tftd)/((1.2 * (0.25 + (0.75*(docLengthD/docLengthA)))) + tftd)
+
+    def _get_ld(self, factor=1):
+        return factor

@@ -18,3 +18,6 @@ class Variants(ABC):
     def _get_wqt(self, n, dft):
         """Calculates wqt for the specific term"""
         pass
+
+    def _get_ld(self, factor=1):
+        pass

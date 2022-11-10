@@ -11,6 +11,7 @@ class TfidfVariant(Variants):
         pathDW = path + "/docWeights.bin"
         pathSC = path + "/sizeOfCorpus.bin"
         socFile = open(pathSC, "rb")
+        dwfile = open(pathDW, "rb")
         accumulator_dict = {}
         size_of_corpus = struct.unpack("i", socFile.read())
 
@@ -24,14 +25,18 @@ class TfidfVariant(Variants):
 
             # Calculate score for every document
             for posting in tPostingList:
+
                 # compute wqt * wdt
                 tftd = len(posting.get_positions())
                 temp = self._get_wdt(self, tftd) * wqt
-                # Get LD
-                file = open(pathDW, "rb")
-                file.seek(8 * posting.doc_id)
-                file_contents = file.read(8)
-                ld = struct.unpack("d", file_contents)[0]
+
+                # Get docWeights
+                dwfile.seek(32 * posting.doc_id)
+                file_contents = dwfile.read(8)
+                docWeights = struct.unpack("d", file_contents)[0]
+
+                ld = self._get_ld(self, docWeights)
+
                 if posting.doc_id in accumulator_dict:
                     # Increment
                     accumulator_dict[posting.doc_id] += (temp / ld)
@@ -46,3 +51,6 @@ class TfidfVariant(Variants):
 
     def _get_wdt(self, tftd):
         return tftd
+
+    def _get_ld(self, docW):
+        return docW

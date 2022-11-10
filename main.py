@@ -9,13 +9,27 @@ from documents import DocumentCorpus, DirectoryCorpus
 from queries import BooleanQueryParser
 from text import EnglishTokenStream
 from porter2stemmer import Porter2Stemmer
-from io import StringIO
 import numpy as np
 import heapq as hq
 import time
 import os
 import math
-import struct
+
+
+def print_10docs_with_scores(doc_dict, dd):
+    heap = [(-value, key) for key, value in doc_dict.items()]
+    largest = hq.nsmallest(10, heap)
+    largest = [(key, -value) for value, key in largest]
+    for tup in largest:
+        print(dd.get_document(int(tup[0])).getTitle, end="")
+        print(" - " + str(tup[1]))
+
+
+def print_variant_names():
+    print("1. Default method")
+    print("2. tf-idf method")
+    print("3. Okapi BM25")
+    print("4. Wacky")
 
 
 def print_docs_with_docId(doc_id, dd):
@@ -50,11 +64,11 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
     soundex_index = SoundexIndex()
     diw = DiskIndexWriter()
     docWeights_dict = {}
-    docLengthD_dict = {}
     docLengthA = 0
     totalDocs = 0
 
     for d in corpus:
+        doc_data = []  # docWeights, docLenD, byteSize, avg(tftd) in order
         stream = EnglishTokenStream(d.getContent())
         byteSize = d.getByteSize()
         wdt_sum = 0
@@ -80,16 +94,21 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
             wdt_sum += wdt * wdt
 
         # Calculate ld and insert into ld dict for this document
-        docWeights_dict[d.id] = math.sqrt(wdt_sum)
+        doc_data.append(math.sqrt(wdt_sum))
+        # docWeights_dict[d.id] = math.sqrt(wdt_sum)
 
         # Insert No. of Tokens in the dictionary
-        docLengthD_dict[d.id] = number_of_tokens
+        doc_data.append(number_of_tokens)
+        # docLengthD_dict[d.id] = number_of_tokens
 
-        # getting authors for soundex
-        if typ == 1:
-            auth = EnglishTokenStream(d.getAuthor())
-            for ss in auth:
-                soundex_index.add_term(soundex_processor.process_token(ss), d.id)
+        # Insert bytesize
+        doc_data.append(byteSize)
+
+        # Insert Avg(tftd) = (total terms / total unique terms)
+        if len(this_doc_hash) != 0:
+            doc_data.append(number_of_tokens / len(this_doc_hash))
+        else:
+            doc_data.append(0)
 
         # Update docLengthA
         docLengthA += 1
@@ -97,11 +116,20 @@ def index_corpus(corpus: DocumentCorpus, typ: int, corpus_path: str):
         # increment doc count
         totalDocs += 1
 
+        # add docdata to docW dict
+        docWeights_dict[d.id] = doc_data
+
+        # getting authors for soundex
+        if typ == 1:
+            auth = EnglishTokenStream(d.getAuthor())
+            for ss in auth:
+                soundex_index.add_term(soundex_processor.process_token(ss), d.id)
+
     # docLengthA = avg number of tokens in all documents in corpus. i.e. number of tokens of corpus/total no. of docs
     docLengthA = len(inverted_index.getEntireVocab().keys())/docLengthA
 
     # write inverted index to disk
-    diw.writeIndex(inverted_index, corpus_path, docWeights_dict, docLengthD_dict, docLengthA, totalDocs, byteSize)
+    diw.writeIndex(inverted_index, corpus_path, docWeights_dict, docLengthA, totalDocs)
     # write soundex index to disk
     diw.writeSoundexIndex(soundex_index, corpus_path)
 
@@ -179,36 +207,21 @@ def boolean_mode(dpIndex, dd, path):
 
 
 def ranked_mode(dp_index, dd, path, tkn_processor):
-    print_variant_names()
-    choice = input()
-    choice_dict = {'1': DefaultVariant,
-                   '2': TfidfVariant,
-                   '3': OkapiVariant,
-                   '4': WackyVariant
-                   }
-    query = input("Enter query: ")
-    if query == ":q":
-        return
+    while True:
+        print_variant_names()
+        choice = input()
+        choice_dict = {'1': DefaultVariant,
+                       '2': TfidfVariant,
+                       '3': OkapiVariant,
+                       '4': WackyVariant
+                       }
+        query = input("Enter query: ")
+        if query == ":q":
+            return
 
-    accumulator_dict = choice_dict.get(choice).get_accumulator_dict(choice_dict.get(choice), query, path, dp_index, token_processor)
+        accumulator_dict = choice_dict.get(choice).get_accumulator_dict(choice_dict.get(choice), query, path, dp_index, token_processor)
 
-    print_10docs_with_scores(accumulator_dict, dd)
-
-
-def print_10docs_with_scores(doc_dict, dd):
-    heap = [(-value, key) for key, value in doc_dict.items()]
-    largest = hq.nsmallest(10, heap)
-    largest = [(key, -value) for value, key in largest]
-    for tup in largest:
-        print(dd.get_document(int(tup[0])).getTitle, end="")
-        print(" - " + str(tup[1]))
-
-
-def print_variant_names():
-    print("1. Default method")
-    print("2. tf-idf method")
-    print("3. Okapi BM25")
-    print("4. Wacky")
+        print_10docs_with_scores(accumulator_dict, dd)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+import math
+
 from formulas.variants import Variants
 from text.englishtokenstream import EnglishTokenStream
 from io import StringIO
@@ -10,10 +12,15 @@ class WackyVariant(Variants):
         mStream = EnglishTokenStream(StringIO(query))
         pathDW = path + "/docWeights.bin"
         pathSC = path + "/sizeOfCorpus.bin"
-        dwfile = open(pathDW, "rb")
+        pathDLA = path + "/docLengthA.bin"
         socFile = open(pathSC, "rb")
+        dlaFile = open(pathDLA, "rb")
+        dwfile = open(pathDW, "rb")
         accumulator_dict = {}
         size_of_corpus = struct.unpack("i", socFile.read())
+
+        # get docLengthA
+        docLengthA = struct.unpack("d", dlaFile.read(8))[0]
 
         for term in mStream:
             processed_token_list = token_processor.process_token(term)
@@ -25,14 +32,20 @@ class WackyVariant(Variants):
 
             # Calculate score for every document
             for posting in tPostingList:
+
+                # get byteSize & avgTftd
+                dwfile.seek((32 * posting.doc_id) + 16)
+                byteSize = struct.unpack("d", dwfile.read(8))[0]
+                dwfile.seek((32 * posting.doc_id) + 24)
+                avgTftd = struct.unpack("d", dwfile.read(8))[0]
+
                 # compute wqt * wdt
                 tftd = len(posting.get_positions())
-                temp = self._get_wdt(self, tftd) * wqt
-                # Get LD
+                temp = self._get_wdt(self, tftd, avgTftd) * wqt
 
-                dwfile.seek(8 * posting.doc_id)
-                file_contents = dwfile.read(8)
-                ld = struct.unpack("d", file_contents)[0]
+                # Get ld
+                ld = self._get_ld(self, byteSize)
+
                 if posting.doc_id in accumulator_dict:
                     # Increment
                     accumulator_dict[posting.doc_id] += (temp / ld)
@@ -43,7 +56,10 @@ class WackyVariant(Variants):
         return accumulator_dict
 
     def _get_wqt(self, n, dft):
-        return np.log(1 + (n/dft))
+        return max(0, np.log((n-dft)/dft))
 
-    def _get_wdt(self, tftd):
-        return 1 + np.log(tftd)
+    def _get_wdt(self, tftd, avgTftd):
+        return (1 + np.log(tftd))/(1 + np.log(avgTftd))
+
+    def _get_ld(self, byteSize):
+        return math.sqrt(byteSize)
