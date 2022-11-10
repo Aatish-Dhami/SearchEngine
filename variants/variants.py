@@ -10,7 +10,7 @@ class Variants(ABC):
         pass
 
     @abstractmethod
-    def _get_wdt(self, tftd):
+    def _get_wdt(self, posting):
         """Calculates wdt for the specific term-document"""
         pass
 

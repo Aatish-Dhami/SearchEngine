@@ -7,7 +7,7 @@ class Posting:
     def __init__(self, doc_id: int):
         self.doc_id = doc_id
         self.position = []
-        self.wdt = 0
+        self.wdt = []  # default, tfidf, okapi, wacky in order
 
     def add_position(self, position):
         self.position.append(position)
@@ -19,9 +19,9 @@ class Posting:
         return self.position
 
     def get_wdt(self):
-        # returns the frequency of that term in the document
+        # returns the wdt list of that term in the document
         return self.wdt
 
-    def set_wdt(self, value):
-        # sets the value of wdt for this particular posting for its term
-        self.wdt = 1 + np.log(value)
+    def add_wdt(self, value):
+        # add the value of wdt for this particular posting for its term
+        self.wdt.append(value)

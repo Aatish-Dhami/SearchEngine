@@ -32,11 +32,25 @@ class DiskPositionalIndex(Index):
             ptr += 4
             posting = Posting(docId[0] + previous_docId)
             previous_docId = posting.doc_id
-            tftd = struct.unpack("i", file_contents[ptr:ptr + 4])
+
+            # TODO: Add wdt for different methods in posting
+            wdt1 = struct.unpack("d", file_contents[ptr:ptr + 8])[0]
+            ptr += 8
+            posting.add_wdt(wdt1)
+            wdt2 = struct.unpack("d", file_contents[ptr:ptr + 8])[0]
+            ptr += 8
+            posting.add_wdt(wdt2)
+            wdt3 = struct.unpack("d", file_contents[ptr:ptr + 8])[0]
+            ptr += 8
+            posting.add_wdt(wdt3)
+            wdt4 = struct.unpack("d", file_contents[ptr:ptr + 8])[0]
+            ptr += 8
+            posting.add_wdt(wdt4)
+
+            tftd = struct.unpack("i", file_contents[ptr:ptr + 4])[0]
             ptr += 4
-            posting.set_wdt(tftd)
             previous_poss = 0
-            for j in range(tftd[0]):
+            for j in range(tftd):
                 poss = struct.unpack("i", file_contents[ptr:ptr + 4])
                 ptr += 4
                 posting.add_position(poss[0] + previous_poss)
@@ -98,7 +112,7 @@ class DiskPositionalIndex(Index):
         list_of_tuple = c.fetchmany(1000)
         ans = []
         for t in list_of_tuple:
-            ans.append(str(t))
+            ans.append(str(t[0]))
         return ans
 
     def getWqt(self, term, size_of_corpus):

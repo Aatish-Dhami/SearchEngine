@@ -1,6 +1,6 @@
 import math
 
-from formulas.variants import Variants
+from variants.variants import Variants
 from text.englishtokenstream import EnglishTokenStream
 from io import StringIO
 import struct
@@ -41,7 +41,7 @@ class WackyVariant(Variants):
 
                 # compute wqt * wdt
                 tftd = len(posting.get_positions())
-                temp = self._get_wdt(self, tftd, avgTftd) * wqt
+                temp = posting.wdt[3] * wqt
 
                 # Get ld
                 ld = self._get_ld(self, byteSize)
@@ -58,8 +58,8 @@ class WackyVariant(Variants):
     def _get_wqt(self, n, dft):
         return max(0, np.log((n-dft)/dft))
 
-    def _get_wdt(self, tftd, avgTftd):
-        return (1 + np.log(tftd))/(1 + np.log(avgTftd))
+    def _get_wdt(self, posting):
+        return posting.get_wdt[4]
 
     def _get_ld(self, byteSize):
         return math.sqrt(byteSize)

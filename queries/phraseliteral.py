@@ -64,7 +64,7 @@ class PhraseLiteral(QueryComponent):
         if len(self.terms) == 0:
             return []
         elif len(self.terms) == 1:
-            return index.getPostings(self.terms[0])
+            return index.getPostings(token_processor.process_token(self.terms[0])[-1])
 
         postingListForIndiTerm = []
 

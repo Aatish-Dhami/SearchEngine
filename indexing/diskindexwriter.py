@@ -1,9 +1,10 @@
+from wdts.okapiwdt import OkapiWdt
+from wdts.tfidfwdt import TfidfWdt
+from wdts.wackywdt import WackyWdt
+from wdts.defaultwdt import DefaultWdt
 from indexing import Index
-from indexing import Posting
 import struct
 import sqlite3
-import os
-
 
 class DiskIndexWriter(Index):
     def __init__(self):
@@ -45,11 +46,30 @@ class DiskIndexWriter(Index):
             previous_id = 0
             for posting in postingList:
                 # Writing doc_id
-                postingFile.write(struct.pack("i", posting.get_document_id() - previous_id))
+                doc_id = posting.get_document_id() - previous_id
+                postingFile.write(struct.pack("i", doc_id))
                 previous_id = posting.get_document_id()
+
+                tftd = len(posting.get_positions())
+
                 # TODO: Writing Wdts of all methods -DSP
+                # Write wdt(def)
+                wdt1 = DefaultWdt.calculate_wdt(DefaultWdt, tftd)
+                postingFile.write(struct.pack("d", wdt1))
+                # Write wdt(tfidf)
+                wdt2 = TfidfWdt.calculate_wdt(TfidfWdt, tftd)
+                postingFile.write(struct.pack("d", wdt2))
+                # Write wdt(okapi)
+                wdt3 = OkapiWdt.calculate_wdt(OkapiWdt, tftd, docWeights_dict.get(doc_id)[1], docLengthA)
+                postingFile.write(struct.pack("d", wdt3))
+                # Write wdt(wacky)
+                wdt4 = WackyWdt.calculate_wdt(WackyWdt, tftd, 0, avgTftd=docWeights_dict.get(doc_id)[3])
+                postingFile.write(struct.pack("d", wdt4))
+
+
                 # Writing tf-t,d
-                postingFile.write(struct.pack("i", len(posting.get_positions())))
+                postingFile.write(struct.pack("i", tftd))
+
                 previous_pos = 0
                 for pos in posting.get_positions():
                     # Writing positions

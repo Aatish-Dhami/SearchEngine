@@ -1,8 +1,8 @@
 from indexing import InvertedIndex, SoundexIndex, DiskIndexWriter, DiskPositionalIndex
-from formulas.defaultvariant import DefaultVariant
-from formulas.tfidfvariant import TfidfVariant
-from formulas.okapivariant import OkapiVariant
-from formulas.wackyvariant import WackyVariant
+from variants.defaultvariant import DefaultVariant
+from variants.tfidfvariant import TfidfVariant
+from variants.okapivariant import OkapiVariant
+from variants.wackyvariant import WackyVariant
 from text.advancedtokenprocessor import AdvancedTokenProcessor
 from text.soundextokenprocessor import SoundexTokenProcessor
 from documents import DocumentCorpus, DirectoryCorpus

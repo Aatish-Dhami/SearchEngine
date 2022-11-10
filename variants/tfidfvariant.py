@@ -1,24 +1,19 @@
-from formulas.variants import Variants
+from variants.variants import Variants
 from text.englishtokenstream import EnglishTokenStream
 from io import StringIO
 import struct
 import numpy as np
 
 
-class OkapiVariant(Variants):
+class TfidfVariant(Variants):
     def get_accumulator_dict(self, query, path, dp_index, token_processor):
         mStream = EnglishTokenStream(StringIO(query))
         pathDW = path + "/docWeights.bin"
         pathSC = path + "/sizeOfCorpus.bin"
-        pathDLA = path + "/docLengthA.bin"
         socFile = open(pathSC, "rb")
-        dlaFile = open(pathDLA, "rb")
         dwfile = open(pathDW, "rb")
         accumulator_dict = {}
         size_of_corpus = struct.unpack("i", socFile.read())
-
-        # get docLengthA
-        docLengthA = struct.unpack("d", dlaFile.read(8))[0]
 
         for term in mStream:
             processed_token_list = token_processor.process_token(term)
@@ -31,16 +26,16 @@ class OkapiVariant(Variants):
             # Calculate score for every document
             for posting in tPostingList:
 
-                # get docLengthD
-                dwfile.seek((32 * posting.doc_id) + 8)
-                doclengthD = struct.unpack("d", dwfile.read(8))[0]
-
                 # compute wqt * wdt
-                tftd = len(posting.get_positions())
-                temp = self._get_wdt(self, tftd, doclengthD, docLengthA) * wqt
+                # tftd = len(posting.get_positions())
+                temp = posting.wdt[1] * wqt
 
-                # get ld
-                ld = self._get_ld(self)
+                # Get docWeights
+                dwfile.seek(32 * posting.doc_id)
+                file_contents = dwfile.read(8)
+                docWeights = struct.unpack("d", file_contents)[0]
+
+                ld = self._get_ld(self, docWeights)
 
                 if posting.doc_id in accumulator_dict:
                     # Increment
@@ -52,10 +47,10 @@ class OkapiVariant(Variants):
         return accumulator_dict
 
     def _get_wqt(self, n, dft):
-        return max(0.1, np.log((n-dft+0.5)/(dft+0.5)))
+        return np.log(n/dft)
 
-    def _get_wdt(self, tftd, docLengthD, docLengthA):
-        return (2.2 * tftd)/((1.2 * (0.25 + (0.75*(docLengthD/docLengthA)))) + tftd)
+    def _get_wdt(self, posting):
+        return posting.get_wdt[1]
 
-    def _get_ld(self, factor=1):
-        return factor
+    def _get_ld(self, docW):
+        return docW
