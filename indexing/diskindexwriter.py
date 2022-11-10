@@ -9,7 +9,7 @@ class DiskIndexWriter(Index):
     def __init__(self):
         pass
 
-    def writeIndex(self, index, path, docWeights_dict: dict, docLengthD_dict: dict, docLengthA):
+    def writeIndex(self, index, path , docWeights_dict: dict, docLengthD_dict: dict, docLengthA, size_of_corpus: int, bytesize: int):
         """Retrieve the vocabulary from the index, and loop through each term in the vocab list. Get the postings list
         for a term, then write the list to disk using the format mentioned below:
         dft(4-byte int), doc-id gap(4-byte int), Wdts(8-byte double each),tftd(4-byte int), positions gaps(4-byte int each)"""
@@ -19,10 +19,12 @@ class DiskIndexWriter(Index):
         pathDb = path + "/postings.db"
         pathDLD = path + "/docLengthD.bin"
         pathDLA = path + "/docLengthA.bin"
+        pathSC = path + "/sizeOfCorpus.bin"
         newFile = open(pathBin, "wb")
         docWeightsFile = open(pathDW, "wb")
         docLengthDFile = open(pathDLD, "wb")
         docLengthAFile = open(pathDLA, "wb")
+        sizeOfCorpusFile = open(pathSC, "wb")
 
         # Create table postings
         conn = sqlite3.connect(pathDb)
@@ -47,7 +49,7 @@ class DiskIndexWriter(Index):
                 # Writing doc_id
                 newFile.write(struct.pack("i", posting.get_document_id() - previous_id))
                 previous_id = posting.get_document_id()
-                # TODO: Writing Wdts of all methods
+                # TODO: Writing Wdts of all methods -DSP
                 # Writing tf-t,d
                 newFile.write(struct.pack("i", len(posting.get_positions())))
                 previous_pos = 0
@@ -66,6 +68,9 @@ class DiskIndexWriter(Index):
 
         # Writing docLengthA
         docLengthAFile.write(struct.pack("d", docLengthA))
+
+        # Writing size of corpus
+        sizeOfCorpusFile.write(struct.pack("i", size_of_corpus))
 
     def writeSoundexIndex(self, index, path):
         pathSDX = path + "/soundex.bin"

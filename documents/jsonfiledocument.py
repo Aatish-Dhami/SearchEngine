@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Iterable
 from .document import Document
 import json
+import os
 
 
 class JsonFileDocument(Document):
@@ -13,6 +14,7 @@ class JsonFileDocument(Document):
     def __init__(self, id: int, path: Path):
         super().__init__(id)
         self.path = path
+        self.bytesize = os.stat(path).st_size
         with open(self.path, 'r') as file:
             self.my_title = json.load(file).get('title')
 
@@ -28,6 +30,9 @@ class JsonFileDocument(Document):
     def getAuthor(self) -> Iterable[str]:
         with open(self.path, 'r') as file:
             return StringIO(json.load(file).get('author'))
+
+    def getByteSize(self) -> int:
+        return self.bytesize
 
     @staticmethod
     def load_from(abs_path: Path, doc_id: int) -> 'JsonFileDocument':

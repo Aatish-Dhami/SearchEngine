@@ -18,6 +18,9 @@ class Document(ABC):
         """The title of the document, for displaying to the user."""
         pass
 
+    def getByteSize(self) -> int:
+        pass
+
     # @abstractmethod
     # def getAuthor(self) -> str:
     #     """The Author of the document, for displaying to the user."""

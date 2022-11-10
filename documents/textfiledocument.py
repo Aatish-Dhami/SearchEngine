@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Iterable
 from .document import Document
+import os
 
 
 class TextFileDocument(Document):
@@ -10,6 +11,7 @@ class TextFileDocument(Document):
     def __init__(self, id : int, path : Path):
         super().__init__(id)
         self.path = path
+        self.bytesize = os.stat(path).st_size
 
     @property
     def getTitle(self) -> str:
@@ -18,6 +20,9 @@ class TextFileDocument(Document):
     # returns TextIOWrapper
     def getContent(self) -> Iterable[str]:
         return open(self.path)
+
+    def getByteSize(self) -> int:
+        return self.bytesize
 
     @staticmethod
     def load_from(abs_path: Path, doc_id: int) -> 'TextFileDocument':
