@@ -40,3 +40,12 @@ Webapp Sceenshot:
 
 <img width="1728" alt="Search Engine" src="https://user-images.githubusercontent.com/47736398/194021576-8a0f5f3e-7024-4612-b651-f8e9d122282f.png">
 
+MILESTONE 2
+Additional Features(6 points required):
+1. Variant tf-idf formulas - 3points
+    a) Default
+    b) tf-idf
+    c) Okapi BM25
+    d) Wacky            
+2. DSP Index - 2points
+3. Soundex Algorithm on disk
