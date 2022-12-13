@@ -1,17 +1,7 @@
-from indexing import InvertedIndex, SoundexIndex, DiskIndexWriter, DiskPositionalIndex
-from variants.defaultvariant import DefaultVariant
-from variants.tfidfvariant import TfidfVariant
-from variants.okapivariant import OkapiVariant
-from variants.wackyvariant import WackyVariant
+from indexing import DiskPositionalIndex
 from text.advancedtokenprocessor import AdvancedTokenProcessor
-from text.soundextokenprocessor import SoundexTokenProcessor
-from documents import DocumentCorpus, DirectoryCorpus
-from queries import BooleanQueryParser
+from documents import DirectoryCorpus
 from text import EnglishTokenStream
-from porter2stemmer import Porter2Stemmer
-import numpy as np
-import heapq as hq
-import time
 import os
 import math
 import struct
