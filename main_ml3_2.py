@@ -1,3 +1,5 @@
+import sqlite3
+
 from numpy.dual import norm
 
 from indexing import DiskPositionalIndex
@@ -80,7 +82,6 @@ def load_directory(path):
 
 
 def get_document_vectors(class_order):
-
     path_dict = {
         0: madi_path,
         1: jay_path,
@@ -95,8 +96,18 @@ def get_document_vectors(class_order):
         3: disputed_vocab
     }
 
+    index_dict = {
+        0: madison_index,
+        1: jay_index,
+        2: hamilton_index,
+        3: disputed_index
+    }
+
     pathDW = path_dict[class_order] + "/docWeights.bin"
     dwfile = open(pathDW, "rb")
+    pathDB = path_dict[class_order] + "/postings.db"
+    pathBin = path_dict[class_order] + "/postings.bin"
+    file = open(pathBin, "rb")
 
     # For each document in path
     tkn_processor = AdvancedTokenProcessor()
@@ -113,11 +124,21 @@ def get_document_vectors(class_order):
 
         for vocab in total_vocab:
             if vocab in document_vocab:
-                # Put docWeights which sum of wdt^2 divide by Ld
+                # get wdt
+                conn = sqlite3.connect(pathDB)
+                c = conn.cursor()
+                c.execute("SELECT bytePos FROM postings WHERE term =:term", {'term': vocab})
+                termPos = c.fetchone()
+                file.seek(termPos[0])
+                file_contents = file.read()
+                ptr = 8
+                wdt = struct.unpack("d", file_contents[ptr:ptr + 8])[0]
+
+                # wdt divide by Ld
                 dwfile.seek(32 * d.id)
                 file_contents = dwfile.read(8)
                 docWeights = struct.unpack("d", file_contents)[0]
-                vector_array.append(docWeights)
+                vector_array.append(wdt / docWeights)
             else:
                 vector_array.append(0)
         class_vectors.append([dd.get_document(d.id).getTitle , np.array(vector_array)])
@@ -182,3 +203,9 @@ if __name__ == "__main__":
     for key, value in pred.items():
         print(key, end=": ")
         print(value)
+
+    for key, value in disp_vdocs:
+        if key == 'paper_53':
+            print("First 30 components alphabetically")
+            for i in range(0, 30):
+                print(value[i])

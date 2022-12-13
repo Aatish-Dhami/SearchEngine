@@ -1,3 +1,5 @@
+import itertools
+
 from indexing import DiskPositionalIndex
 from text.advancedtokenprocessor import AdvancedTokenProcessor
 from documents import DirectoryCorpus
@@ -357,15 +359,13 @@ if __name__ == "__main__":
     cds_jay = get_cd(ptc_table, 1)
     cds_hamilton = get_cd(ptc_table, 2)
 
-    # for key, value in cds_madison.items():
-    #     cds_madison[key] = cds_madison[key] + 200
-    # for key, value in cds_jay.items():
-    #     cds_jay[key] = cds_jay[key] + 200
-    # for key, value in cds_hamilton.items():
-    #     cds_hamilton[key] = cds_hamilton[key] + 200
+    print(t_star_itc)
 
+    print("Class Hamilton : ", end="")
     print(cds_hamilton)
+    print("Class Madison : ", end="")
     print(cds_madison)
+    print("Class Jay : ", end="")
     print(cds_jay)
 
 
