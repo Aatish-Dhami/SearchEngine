@@ -51,7 +51,11 @@ Additional Features(6 points required):
 3. Soundex Algorithm on disk
 
 MILESTONE 3
+
 Additional Features(6 points required):
+
 -Perform Classification (2 points)
+
 -Bayesian Classification (2 points)
+
 -KNN Classification (2 points)
