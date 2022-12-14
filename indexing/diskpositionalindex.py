@@ -115,6 +115,17 @@ class DiskPositionalIndex(Index):
             ans.append(str(t[0]))
         return ans
 
+    def getEntireVocabulary(self) -> list[str]:
+        # get all terms
+        conn = sqlite3.connect(self.pathDB)
+        c = conn.cursor()
+        c.execute("SELECT term FROM postings")
+        list_of_tuple = c.fetchall()
+        ans = []
+        for t in list_of_tuple:
+            ans.append(str(t[0]))
+        return ans
+
     def getWqt(self, term, size_of_corpus):
         conn = sqlite3.connect(self.pathDB)
         c = conn.cursor()

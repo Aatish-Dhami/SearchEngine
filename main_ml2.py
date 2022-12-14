@@ -261,3 +261,7 @@ if __name__ == "__main__":
 # Npss Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/all-nps-sites-extracted
 # tsta PATH: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/testauth
 # 4000 Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/mlb-articles-4000
+# Madi Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/federalist-papers/MADISON
+# Jay  Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/federalist-papers/JAY
+# Hami Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/federalist-papers/HAMILTON
+# Disp Path: /Users/aatishdhami/IdeaProjects/CECS529Python/SearchEngine/Data/federalist-papers/DISPUTED
